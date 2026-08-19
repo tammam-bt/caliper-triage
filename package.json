@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Caliper — assistive triage console. Symptom intake, medical media capture, model-assisted assessment.",
+  "description": "Caliper \u2014 assistive triage console. Symptom intake, medical media capture, model-assisted assessment.",
   "workspaces": [
     "packages/*",
     "apps/*"
@@ -16,7 +16,8 @@
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "dev:web": "npm run dev -w @caliper/web",
-    "dev:api": "npm run dev -w @caliper/api"
+    "dev:api": "npm run dev -w @caliper/api",
+    "e2e": "npm run e2e -w @caliper/web"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",
