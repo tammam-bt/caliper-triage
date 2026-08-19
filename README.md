@@ -43,9 +43,15 @@ Being precise about this matters more than making the demo sound impressive.
 - The neural inference. Opt in and the browser downloads MobileCLIP S0 (21.8 MiB, fp16) and runs
   real zero-shot classification locally via ONNX Runtime.
 - The backend. `apps/api` is a working Express + MongoDB + Socket.IO service with JWT auth and
-  roles, magic-byte upload validation, GridFS media storage, an ffmpeg frame extractor and an
-  OpenAI-compatible vision-LLM provider. 39 tests against real Mongoose and real GridFS.
+  roles, magic-byte upload validation, GridFS media storage and an OpenAI-compatible vision-LLM
+  provider. 26 integration tests run against real Mongoose and real GridFS; 5 more drive a real
+  Socket.IO connection over TCP, including the auth handshake and room isolation.
 - The calibration. Temperature scaling, an abstention rule, and a hard confidence ceiling.
+
+**Written but not exercised here:** the ffmpeg video frame extractor. There is no ffmpeg binary in
+the environment this was built in, so it is typechecked but unrun; it raises a message naming the
+missing dependency rather than failing obscurely, and the Docker image installs ffmpeg. Browser-side
+video frame sampling *is* real and works.
 
 **Prototype:**
 
@@ -86,7 +92,8 @@ To run it against the real server instead, set `VITE_API_URL`. Nothing above the
 ```bash
 npm install
 
-# Everything: 144 tests across four packages
+# Everything: 152 unit and integration tests across four packages
+# (2 skip unless OPENROUTER_API_KEY is set — they call a live vision model)
 npm test
 
 # The console, on its own (in-browser API)

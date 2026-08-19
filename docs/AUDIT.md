@@ -283,7 +283,7 @@ the assertion filters by analysis id.
  ✓ @caliper/core     79 tests
  ✓ @caliper/service  16 tests
  ✓ @caliper/api      39 tests   (26 integration + 11 sample calibration + 2 live LLM)
-   144 tests total
+   144 tests total  (at Gate 4; 147 + 10 e2e after the web unit tests were added in Gate 5)
 ```
 
 `tsc --noEmit` clean. Verified in a real browser at 1440×900 and 390×844, with screenshots reviewed
@@ -520,3 +520,63 @@ The completion notification carries the acuity band and nothing else — never t
 the confidence. A lock-screen preview reading "Melanoma, 72%" is a disclosure to whoever is holding
 the phone, and notification payloads are the easiest place in a health app to leak a diagnosis by
 accident.
+---
+
+## Gate 7 — Documents and final audit — **PASS** (2026-08-19)
+
+### Final test position
+
+```
+@caliper/core      79   fixtures, CV algorithms, symptom negation, fusion and calibration
+@caliper/service   16   pipeline stage machine, failure modes, cancellation, idempotency
+@caliper/api       44   26 integration (real Mongoose + real GridFS)
+                        11 calibration over real clinical photographs
+                         5 Socket.IO over a real TCP connection
+                         2 live vision-LLM (skip without OPENROUTER_API_KEY)
+@caliper/web       13   the in-browser transport the deployment runs on
+                  ───
+                  152   plus 10 Playwright e2e against the production build
+```
+
+CI green: `Typecheck and tests` 1m08s, `End-to-end` 1m47s.
+
+### A gap the honesty pass found
+
+**Socket.IO had no test.** Every API test drove the pipeline through the in-memory event bus, which
+exercises the pipeline and says nothing about whether a browser could actually subscribe. Socket.IO
+was on the client's requirements list and was the one named technology in the stack with nothing
+behind it — and the README was about to claim it worked.
+
+`apps/api/src/socket.test.ts` now starts a real HTTP server, a real Socket.IO server with the real
+auth handshake, and connects a real client over TCP: rejects a missing token, rejects a forged
+token, streams the full stage sequence plus the terminal result to a subscribed client, delivers
+nothing to a client that has not joined the room, and stops delivering after unsubscribe.
+
+### Claims corrected during the pass
+
+Each of these was true-ish and is now exactly true:
+
+- "39 tests against real Mongoose and real GridFS" → 26 are; the other 13 are calibration and live
+  tests that never touch Mongo.
+- "ffmpeg frame extractor" was listed under *real*. It is written and typechecked but has never
+  been executed, because there is no ffmpeg binary here. Moved to its own section saying so.
+- Test counts in three documents were stale by one phase.
+
+### CI as the fresh-clone test
+
+Gate 7 asked for a `git clone && npm i && npm test` from nothing. CI does exactly that on every
+push — `actions/checkout` into an empty workspace, `npm ci` against the committed lockfile, then
+typecheck, all tests, and e2e on a machine with no npm cache and no prior state. It passes. That is
+stronger evidence than a local clone, which would share this machine's npm cache.
+
+### Not verified, collected in one place
+
+- **ffmpeg video extraction** — no binary in this environment. Written, typechecked, unrun.
+- **`docker compose up`** — no Docker here. Compose file and Dockerfile written, never built.
+- **MongoDB Atlas** — not provisioned. All Mongo testing used `mongodb-memory-server`, which runs a
+  real `mongod`.
+- **The mobile app on a device or simulator** — neither available. It typechecks and bundles to
+  1.9 MB of Hermes bytecode; camera, picker and notification flows are unexercised.
+- **The PNG decoder in `apps/mobile/src/decode.ts`** — exercised by the bundler, not by a test.
+- **Real patient data, and any clinical validity whatsoever.** Nothing here has been validated. The
+  coefficients are illustrative and the confidence ceiling exists because of it.

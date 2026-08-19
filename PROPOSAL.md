@@ -25,13 +25,16 @@ still escalates the acuity. I'd rather show you that than a demo that always sou
 **What's in the repo**
 
 - React 19 + TypeScript web app; Node + Express + MongoDB + Socket.IO backend with JWT auth and
-  roles, magic-byte upload validation, GridFS storage, ffmpeg frame extraction, and a job queue
-  behind a port so swapping in BullMQ/Redis is a wiring change.
+  roles, magic-byte upload validation, GridFS storage, and a job queue behind a port so swapping in
+  BullMQ/Redis is a wiring change. Socket.IO is tested over a real connection, handshake and all.
+- An Expo React Native app on the same shared core — same catalogue, same CV, same calibration.
+  It bundles for native (684 modules); I haven't run it on a device, and the audit says so.
 - Real ML, not a stub: MobileCLIP runs **on-device in the browser** (opt-in, 22 MB, real ONNX
   inference), and a server-side vision-LLM provider is verified live against OpenRouter. The
   classical CV — Otsu segmentation on colour distance from the patient's own skin, boundary
   tracing, ABCD descriptors — is what draws the measured contour over your photo.
-- 144 tests across four packages, plus Playwright e2e against the production build. CI green.
+- 152 unit and integration tests across four packages, plus 10 Playwright e2e against the
+  production build. CI green.
 
 The deployed demo runs the API handlers **in the browser**, because GitHub Pages is static hosting
 and I had no server credentials. Same handlers, same Zod schemas, same pipeline, same event
