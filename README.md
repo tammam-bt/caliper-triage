@@ -92,7 +92,7 @@ To run it against the real server instead, set `VITE_API_URL`. Nothing above the
 ```bash
 npm install
 
-# Everything: 152 unit and integration tests across four packages
+# Everything: 153 unit and integration tests across four packages
 # (2 skip unless OPENROUTER_API_KEY is set — they call a live vision model)
 npm test
 

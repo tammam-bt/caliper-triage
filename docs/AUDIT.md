@@ -529,13 +529,13 @@ accident.
 ```
 @caliper/core      79   fixtures, CV algorithms, symptom negation, fusion and calibration
 @caliper/service   16   pipeline stage machine, failure modes, cancellation, idempotency
-@caliper/api       44   26 integration (real Mongoose + real GridFS)
-                        11 calibration over real clinical photographs
+@caliper/api       45   26 integration (real Mongoose + real GridFS)
+                        12 calibration over real clinical photographs
                          5 Socket.IO over a real TCP connection
                          2 live vision-LLM (skip without OPENROUTER_API_KEY)
 @caliper/web       13   the in-browser transport the deployment runs on
                   ───
-                  152   plus 10 Playwright e2e against the production build
+                  153   plus 10 Playwright e2e against the production build
 ```
 
 CI green: `Typecheck and tests` 1m08s, `End-to-end` 1m47s.
@@ -580,3 +580,28 @@ stronger evidence than a local clone, which would share this machine's npm cache
 - **The PNG decoder in `apps/mobile/src/decode.ts`** — exercised by the bundler, not by a test.
 - **Real patient data, and any clinical validity whatsoever.** Nothing here has been validated. The
   coefficients are illustrative and the confidence ceiling exists because of it.
+
+### Final live verification — all four samples, deployed site, cold load
+
+Driven in a real browser against https://tammam-bt.github.io/caliper-triage/ :
+
+| Sample | Top-1 | Confidence | Acuity | Contour points |
+|---|---|---|---|---|
+| Pigmented lesion, changing | Melanoma | 52% | Urgent | 231 |
+| Pearly nodule, non-healing | Basal cell carcinoma | 29% | Prompt | 237 |
+| Itchy, dry patch | Eczema / dermatitis | 38% | Routine | 218 |
+| Hot, spreading redness | Cellulitis | 58% | Urgent | 238 |
+
+Four distinct conditions across three acuity bands, each with a traced contour over its own
+photograph. Zero console errors or warnings.
+
+The BCC case is worth a note: on the image alone it ties exactly with melanoma and the system
+abstains, because a lesion neither darker nor redder than the surrounding skin gives the colour
+cues nothing to work with. Adding the intake — a non-healing history — breaks the tie and resolves
+it to basal cell carcinoma at a prompt band. That is fusion doing the job it exists for, and it is
+why the calibration test was rewritten to send the *same* intake the app sends rather than the
+prose alone.
+
+One piece of UI copy was corrected here: the BCC sample's description still claimed the system
+"declines to commit", which had been true of an earlier calibration and was no longer true of the
+shipped one. A false sentence in the interface is a defect like any other.

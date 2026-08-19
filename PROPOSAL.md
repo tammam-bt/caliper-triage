@@ -33,7 +33,7 @@ still escalates the acuity. I'd rather show you that than a demo that always sou
   inference), and a server-side vision-LLM provider is verified live against OpenRouter. The
   classical CV — Otsu segmentation on colour distance from the patient's own skin, boundary
   tracing, ABCD descriptors — is what draws the measured contour over your photo.
-- 152 unit and integration tests across four packages, plus 10 Playwright e2e against the
+- 153 unit and integration tests across four packages, plus 10 Playwright e2e against the
   production build. CI green.
 
 The deployed demo runs the API handlers **in the browser**, because GitHub Pages is static hosting

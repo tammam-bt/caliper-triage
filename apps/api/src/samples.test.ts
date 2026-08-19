@@ -24,6 +24,9 @@ const SAMPLES_DIR = join(dirname(fileURLToPath(import.meta.url)), '../../web/pub
 interface SampleExpectation {
   file: string;
   symptoms: string;
+  /** Mirrors the chips the app ticks for this sample. */
+  symptomIds: string[];
+  evolving?: boolean;
   /** null when the calibration layer is expected to decline to commit. */
   expectTop: string | null;
   expectAcuity: string;
@@ -34,6 +37,8 @@ const SAMPLES: SampleExpectation[] = [
     file: 'melanoma.jpg',
     symptoms:
       'Pigmented lesion on the upper back. Changing over the past four months, the border has become irregular and it bled once after catching on clothing.',
+    symptomIds: ['changing', 'bleeding'],
+    evolving: true,
     expectTop: 'melanoma',
     expectAcuity: 'urgent',
   },
@@ -41,18 +46,19 @@ const SAMPLES: SampleExpectation[] = [
     file: 'bcc.jpg',
     symptoms:
       'A shiny raised area on sun-exposed skin. It is a sore that will not heal, crusting over and then breaking down again over several months.',
-    // Genuinely ambiguous to this heuristic: with colour cues measured relative to surrounding
-    // skin, a BCC that is neither darker nor redder than its background produces no colour signal
-    // at all, and melanoma and BCC tie. Declining is the correct behaviour — and because a
-    // plausible urgent candidate sits at the top of the tie, acuity escalates rather than
-    // dropping to routine. Refusing to answer must not also refuse to escalate.
-    expectTop: null,
-    expectAcuity: 'urgent',
+    // The image alone is ambiguous to this heuristic: with colour measured relative to surrounding
+    // skin, a BCC that is neither darker nor redder than its background gives no colour signal, and
+    // melanoma and BCC tie exactly. The intake breaks the tie — which is the whole point of fusing
+    // history with pixels rather than ranking on pixels alone.
+    symptomIds: ['non-healing'],
+    expectTop: 'basal_cell_carcinoma',
+    expectAcuity: 'prompt',
   },
   {
     file: 'dermatitis.jpg',
     symptoms:
       'Itchy, dry, flaking skin that has been coming and going for months. No fever, no bleeding, and it has not changed in shape.',
+    symptomIds: ['itching', 'dry'],
     expectTop: 'eczema_dermatitis',
     expectAcuity: 'routine',
   },
@@ -60,6 +66,7 @@ const SAMPLES: SampleExpectation[] = [
     file: 'cellulitis.jpg',
     symptoms:
       'The lower leg is hot, swollen and painful. It has been spreading since yesterday and there is a fever. No itching.',
+    symptomIds: ['fever', 'spreading'],
     expectTop: 'cellulitis',
     expectAcuity: 'urgent',
   },
@@ -78,7 +85,15 @@ async function assess(sample: SampleExpectation) {
     height: info.height,
   });
   const cues = featuresToCues(features);
-  const out = fuse({ intake: IntakeSchema.parse({ symptomsText: sample.symptoms }), quality, features });
+  const out = fuse({
+    intake: IntakeSchema.parse({
+      symptomsText: sample.symptoms,
+      symptomIds: sample.symptomIds,
+      ...(sample.evolving ? { evolving: true } : {}),
+    }),
+    quality,
+    features,
+  });
   return { features, cues, out };
 }
 
@@ -117,10 +132,16 @@ describe('bundled clinical samples', () => {
     expect(new Set(signatures).size).toBe(SAMPLES.length);
   });
 
-  it('produces at least three distinct top-1 conditions across the set', async () => {
-    // The failure mode this guards: one condition leading every differential.
+  it('produces four distinct top-1 conditions across the set', async () => {
+    // The failure mode this guards: one condition leading every differential, which is exactly
+    // what happened when the cue ramps were calibrated against synthetic fixtures.
     const results = await Promise.all(SAMPLES.map(assess));
     const tops = new Set(results.map((r) => r.out.candidates[0]!.conditionId));
-    expect(tops.size).toBeGreaterThanOrEqual(3);
+    expect(tops.size).toBe(SAMPLES.length);
+  });
+
+  it('spans three acuity bands across the set', async () => {
+    const results = await Promise.all(SAMPLES.map(assess));
+    expect(new Set(results.map((r) => r.out.acuity)).size).toBeGreaterThanOrEqual(3);
   });
 });

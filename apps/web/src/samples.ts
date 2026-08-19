@@ -39,7 +39,7 @@ export const SAMPLES: SampleCase[] = [
   {
     id: 'bcc',
     label: 'Pearly nodule, non-healing',
-    purpose: 'Genuinely ambiguous to this heuristic — it declines to commit, but still escalates.',
+    purpose: 'A non-healing history against a bright, low-pigment surface — expect a prompt band.',
     src: 'samples/bcc.jpg',
     symptomsText:
       'A shiny raised area on sun-exposed skin. It is a sore that will not heal, crusting over and then breaking down again over several months.',
