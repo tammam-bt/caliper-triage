@@ -401,3 +401,57 @@ Evidence   MobileCLIP S0 (zero-shot)   22.3% posterior
 
 Initial page load does not touch it: the 23 MB ONNX runtime and the 559 kB transformers chunk are
 split out and fetched only on opt-in. First load is a 374 kB JS chunk plus fonts.
+---
+
+## Gate 5 — Deployment — **PASS** (2026-08-19)
+
+**Live: https://tammam-bt.github.io/caliper-triage/**
+
+Two workflows: `ci.yml` (typecheck, unit and integration tests, Playwright e2e) and `pages.yml`
+(build with the correct base path, SPA fallback, deploy). Pages is configured with
+`build_type=workflow`.
+
+### Verified against the live public URL, not against a local build
+
+```
+GET https://tammam-bt.github.io/caliper-triage/                 → 200
+GET https://tammam-bt.github.io/caliper-triage/samples/melanoma.jpg → 200, 137,569 bytes
+asset base in served HTML → src="/caliper-triage/assets/index-….js"
+```
+
+Full workflow driven in a real browser against the deployed site:
+
+```
+sample "Pigmented lesion, changing" → Run assessment
+  top          Melanoma
+  confidence   52%
+  acuity       Urgent — same-day review
+  contour      231 points drawn over the photograph
+  metadata     A 0.141  B 4.15  C 5.69
+  compute      1053 ms
+  stages       6 of 6 complete
+  console      0 errors, 0 warnings
+```
+
+The confidence differs from the CLI figure for the same image (37%) because the sample also sets
+the `evolving` flag and two symptom chips. Intake changing the outcome is the intended behaviour and
+is covered by test.
+
+### Initial load
+
+The 23 MB ONNX runtime and the 559 kB transformers chunk are code-split and fetched only when a
+user opts into on-device inference. First load is a 374 kB JS chunk, a 23 kB stylesheet and
+self-hosted fonts — no runtime request to Google Fonts, no CDN.
+
+### CI
+
+`Typecheck` and `Unit and integration tests` pass on the runner. The first CI run **failed**, and
+correctly so: `@caliper/web` had a `test` script but no unit test files, and vitest exits non-zero
+on "no test files found". Rather than suppress it with `passWithNoTests`, 13 tests were written for
+the in-browser transport — the code path the entire deployment depends on, and the one place it
+would have been most embarrassing to leave untested.
+
+Writing them surfaced a further race: the API returns `202` with a channel and expects the client to
+subscribe *next*, but the in-process queue started the job in the same microtask, so the `received`
+event could be emitted before the subscription existed. The queue now yields a macrotask first,
+matching the queue hop that always exists in production. Fixed and tested.
