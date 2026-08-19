@@ -14,3 +14,5 @@ apps/web/public/models/
 
 # Playwright MCP scratch output
 .playwright-mcp/
+apps/mobile/dist/
+apps/mobile/.expo/

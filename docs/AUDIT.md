@@ -455,3 +455,68 @@ Writing them surfaced a further race: the API returns `202` with a channel and e
 subscribe *next*, but the in-process queue started the job in the same microtask, so the `received`
 event could be emitted before the subscription existed. The queue now yields a macrotask first,
 matching the queue hop that always exists in production. Fixed and tested.
+---
+
+## Gate 6 — `apps/mobile` — **PARTIAL PASS** (2026-08-19)
+
+Built, typechecked and bundled for a native target. **Not run on a device or simulator**, because
+this environment has neither. That limit is stated here and in the README rather than left implied.
+
+### What was verified
+
+```
+$ npx tsc --noEmit -p apps/mobile/tsconfig.json      → clean
+$ npx expo export --platform android --output-dir dist
+  Android Bundled 6241ms apps/mobile/index.ts (684 modules)
+  _expo/static/js/android/index-….hbc (1.9 MB)
+```
+
+684 modules of Hermes bytecode, with `@caliper/core` and `@caliper/service` compiled in **unchanged**.
+That is the claim worth making: the condition catalogue, the computer vision, the symptom lexicon
+with its negation handling, the fusion weights and the abstention rule are the same code running on
+the phone, in the browser and in the Express worker. One taxonomy and one calibration, not three
+that drift apart.
+
+### What is not verified
+
+- No simulator or device run. Camera capture, the photo picker and the notification permission flow
+  are written against the Expo APIs and typecheck, but have not been exercised.
+- No App Store or Play Store build.
+- The PNG decoder (`src/decode.ts`) has no unit test. It is a real decoder — 8-bit RGB/RGBA,
+  non-interlaced, with all five scanline filters per RFC 2083 — and it throws rather than guessing
+  on anything else, but it has only been exercised by the bundler, not by a test.
+
+### Four problems getting Expo to build inside an npm workspace
+
+Recorded because "add Expo to a monorepo" sounds like a one-liner and is not.
+
+1. **A second React Native.** `expo-image-manipulator@13.0.6` depends on Expo SDK 57, while the app
+   had been pinned to SDK 52. npm installed React Native 0.87 *alongside* 0.76 and hoisted metro
+   0.84 next to metro 0.81, which then disagreed about internal module subpaths. npm `overrides`
+   did not dislodge it. Fixed by aligning the whole app to the current SDK — the underlying mistake
+   was pinning an SDK and then adding packages that had moved past it.
+2. **`babel-preset-expo` was simply missing.** Referenced by `babel.config.js`, not installed,
+   surfacing as an opaque `Cannot read properties of undefined (reading 'transformFile')`.
+3. **`disableHierarchicalLookup: true` broke Expo's own imports.** It confines Metro to the declared
+   `nodeModulesPaths`, and in a hoisted workspace several Expo packages live nested under
+   `node_modules/expo/`, where Metro then cannot see them. `expo-modules-core` failed first. Left at
+   Metro's default.
+4. **Metro could not resolve the shared packages.** `@caliper/core` is standards-compliant
+   TypeScript ESM, where `./schemas.js` is the correct specifier for `./schemas.ts`. Vite resolves
+   that natively and Node resolves it via tsx; Metro does neither. A scoped `resolveRequest` in
+   `metro.config.js` rewrites `.js` to `.ts` for the workspace's own packages only, falling through
+   to the default resolver otherwise.
+
+### Design continuity
+
+The palette and the serif/sans/mono role split are carried over in `src/theme.ts`. The three custom
+families are *not* shipped to mobile — three font files plus a loading state is a poor trade for a
+prototype — so the roles map onto the platform faces. The distinction between report text, console
+chrome and machine-produced numbers is what carries the design, and it survives the substitution.
+
+### One deliberate product decision
+
+The completion notification carries the acuity band and nothing else — never the condition, never
+the confidence. A lock-screen preview reading "Melanoma, 72%" is a disclosure to whoever is holding
+the phone, and notification payloads are the easiest place in a health app to leak a diagnosis by
+accident.

@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "Caliper",
+    "slug": "caliper-triage",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#E8E9E4",
+    "splash": {
+      "backgroundColor": "#234A40",
+      "resizeMode": "contain"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "dev.caliper.triage"
+    },
+    "android": {
+      "package": "dev.caliper.triage",
+      "adaptiveIcon": {
+        "backgroundColor": "#234A40"
+      }
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Caliper needs access to your photos so you can attach a clinical image to a case.",
+          "cameraPermission": "Caliper needs the camera so you can photograph the affected area."
+        }
+      ],
+      "expo-status-bar"
+    ]
+  }
+}

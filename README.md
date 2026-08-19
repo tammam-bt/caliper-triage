@@ -122,8 +122,25 @@ packages/core/      domain: Zod schemas, condition catalogue, CV, symptom scorin
 packages/service/   application: ports, use-cases, pipeline orchestrator, memory adapters
 apps/api/           Express + Mongoose + Socket.IO + multer + inference providers
 apps/web/           React 19 + Vite — the console
+apps/mobile/        Expo React Native — the same core, on a phone
 docs/               PROJECT.md · ROADMAP.md · ARCHITECTURE.md · AUDIT.md
 ```
+
+### The mobile app
+
+`apps/mobile` is an Expo React Native client that imports `@caliper/core` and `@caliper/service`
+**unchanged** — the same catalogue, the same computer vision, the same symptom lexicon, the same
+fusion weights and abstention rule that the web console and the Express API run. One taxonomy and
+one calibration across three runtimes.
+
+```bash
+npm start -w @caliper/mobile          # Expo Go
+npm run bundle:check -w @caliper/mobile   # verify it bundles for a native target
+```
+
+It typechecks and bundles (684 modules, 1.9 MB Hermes bytecode). **It has not been run on a device
+or simulator** — this was built in an environment with neither, and `docs/AUDIT.md` Gate 6 says so
+rather than implying otherwise.
 
 ## Documents
 
