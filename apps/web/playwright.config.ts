@@ -22,5 +22,14 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        // The CI container runs as root, where Chromium's sandbox refuses to start.
+        launchOptions: process.env.CI ? { args: ['--no-sandbox', '--disable-dev-shm-usage'] } : {},
+      },
+    },
+  ],
 });

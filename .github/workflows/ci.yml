@@ -11,53 +11,44 @@ concurrency:
 
 jobs:
   test:
+    name: Typecheck and tests
     runs-on: ubuntu-latest
-    # Without a ceiling, a hung apt step in the Playwright install sits for the full six-hour
-    # default before anyone notices.
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-
       - run: npm ci
-
       - name: Typecheck
         run: npm run typecheck
-
       - name: Unit and integration tests
         # The vision-LLM live test skips without a key, which is the intended CI behaviour.
         run: npm test
 
-      - name: Resolve Playwright version
-        id: pw
-        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
-
-      - name: Cache Playwright browsers
-        id: pw-cache
-        uses: actions/cache@v4
+  e2e:
+    name: End-to-end
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # The official Playwright image ships the browsers and their system libraries. Installing them
+    # on a bare runner meant an apt step that ran past eight minutes and then timed out; pinning
+    # the image to the same version as the dependency removes that step entirely.
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
-
-      - name: Install Playwright browser
-        # `--with-deps` runs apt and is the slowest step in the job by an order of magnitude, so it
-        # only runs when the cache misses.
-        timeout-minutes: 8
-        run: |
-          if [ "${{ steps.pw-cache.outputs.cache-hit }}" = "true" ]; then
-            npx playwright install-deps chromium
-          else
-            npx playwright install --with-deps chromium
-          fi
-
+          node-version: 22
+          cache: npm
+      - run: npm ci
       - name: End-to-end tests
         run: npm run e2e -w @caliper/web
         env:
           CI: 'true'
-
+          # Chromium refuses to start as root without this, and the container runs as root.
+          PLAYWRIGHT_CHROMIUM_SANDBOX: '0'
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
