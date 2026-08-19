@@ -11,3 +11,6 @@ coverage/
 playwright-report/
 test-results/
 apps/web/public/models/
+
+# Playwright MCP scratch output
+.playwright-mcp/

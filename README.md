@@ -9,6 +9,10 @@ model-assisted assessment with an auditable evidence trace.
 > not clinically validated, has not been trained on a labelled dataset, and must not be used to
 > make a care decision.
 
+![The Caliper console after an assessment: the measured segmentation contour and instrument
+metadata drawn over the uploaded photograph, with the ranked differential and acuity band
+alongside.](docs/screenshots/console-result.jpg)
+
 ---
 
 ## What it does
