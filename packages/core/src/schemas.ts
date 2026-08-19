@@ -117,6 +117,16 @@ export const ImageFeaturesSchema = z.object({
   brightSpeckleRatio: z.number(),
   /** Mean RGB inside the mask, for the colour readout. */
   meanColour: z.tuple([z.number(), z.number(), z.number()]),
+  /**
+   * Mean CIE Lab inside the mask, and the reference Lab of the surrounding normal skin.
+   *
+   * Colour cues are derived from the *difference* between these, never from the lesion's absolute
+   * colour. Absolute thresholds encode one skin tone as the norm: "red" and "dark" mean nothing
+   * without knowing what this person's unaffected skin looks like, and a fixed lightness cut-off
+   * would systematically under-detect erythema on darker skin.
+   */
+  lesionLab: z.tuple([z.number(), z.number(), z.number()]),
+  referenceLab: z.tuple([z.number(), z.number(), z.number()]),
 });
 export type ImageFeatures = z.infer<typeof ImageFeaturesSchema>;
 

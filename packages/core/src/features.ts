@@ -7,6 +7,7 @@
 import type { ImageFeatures, QualityIssue, QualityReport } from './schemas.js';
 import type { Lab, RgbaImage } from './image/index.js';
 import {
+  referenceSkinColour,
   asymmetryIndex,
   computeMoments,
   contourPerimeter,
@@ -33,6 +34,8 @@ const MAX_CLUSTER_SAMPLES = 4000;
 export interface ExtractOptions {
   /** Supplied when a scale reference is present, enabling millimetre output. */
   pixelsPerMm?: number;
+  /** Forwarded to segmentation; see `SegmentOptions`. */
+  smoothingPasses?: number;
 }
 
 export interface Extraction {
@@ -52,7 +55,8 @@ export function extractFeatures(source: RgbaImage, options: ExtractOptions = {})
 
   const quality = assessQuality(working);
   const issues: QualityIssue[] = [...quality.report.issues];
-  const mask = segment(working);
+  const referenceLab = referenceSkinColour(working);
+  const mask = segment(working, options.smoothingPasses !== undefined ? { smoothingPasses: options.smoothingPasses } : {});
 
   if (mask.area === 0) {
     issues.push({
@@ -86,6 +90,7 @@ export function extractFeatures(source: RgbaImage, options: ExtractOptions = {})
 
   const area = Math.max(1, mask.area);
   const meanColour: [number, number, number] = [rSum / area, gSum / area, bSum / area];
+  const lesionLab = rgbToLab(meanColour[0], meanColour[1], meanColour[2]);
 
   // Reciprocal circularity. A perfect disc is 1.0; a ragged outline climbs above it.
   // Guarded because a degenerate mask yields a zero perimeter.
@@ -111,6 +116,8 @@ export function extractFeatures(source: RgbaImage, options: ExtractOptions = {})
     brightSpeckleRatio: round(brightSpeckleRatio(lumaSamples), 4),
     contour: simplifyContour(contour, scale),
     meanColour: [round(meanColour[0], 1), round(meanColour[1], 1), round(meanColour[2], 1)],
+    lesionLab: [round(lesionLab[0], 2), round(lesionLab[1], 2), round(lesionLab[2], 2)],
+    referenceLab: [round(referenceLab[0], 2), round(referenceLab[1], 2), round(referenceLab[2], 2)],
   };
 
   return { features, working, quality: { usable: issues.length === 0, issues } };
@@ -195,6 +202,12 @@ export function aggregateFrameFeatures(frames: ImageFeatures[]): {
       wmean((f) => f.meanColour[0]),
       wmean((f) => f.meanColour[1]),
       wmean((f) => f.meanColour[2]),
+    ],
+    lesionLab: [wmean((f) => f.lesionLab[0]), wmean((f) => f.lesionLab[1]), wmean((f) => f.lesionLab[2])],
+    referenceLab: [
+      wmean((f) => f.referenceLab[0]),
+      wmean((f) => f.referenceLab[1]),
+      wmean((f) => f.referenceLab[2]),
     ],
     ...(key.diameterMm !== undefined ? { diameterMm: wmean((f) => f.diameterMm ?? 0) } : {}),
   };

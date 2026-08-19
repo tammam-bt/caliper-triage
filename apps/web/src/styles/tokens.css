@@ -1,0 +1,156 @@
+/*
+ * Caliper design tokens.
+ *
+ * The palette is derived from the subject, not from a component library. Surgical drape green
+ * exists because it is the perceptual complement of blood red and suppresses afterimages during
+ * long procedures; it has been the colour of an operating theatre for a century. That is a reason,
+ * which is what separates it from the indigo that any "modern web UI" prompt returns.
+ *
+ * Deliberately absent: violet, indigo, and every blue-to-purple gradient. Also absent: the warm
+ * cream / high-contrast serif / terracotta combination, which has become its own default.
+ *
+ * The one loud colour, --reticle, appears in exactly one place: measurement overlays inside the
+ * dark viewport. Concentrating it there is what lets everything else stay quiet.
+ */
+
+:root {
+  /* --- ground ------------------------------------------------------------ */
+  --ink: #12181a;            /* near-black with a green cast; text and viewport ground */
+  --ink-70: #3d4649;
+  --ink-45: #626b6e;   /* darkened to clear AA 4.5 on both --paper and --paper-sunk */
+  --ink-25: #6a716f;   /* pending rail stages; meets AA 4.5 rather than merely looking quiet */
+
+  --bone: #e8e9e4;           /* pale mineral neutral, cool — not cream */
+  --paper: #f7f7f4;          /* panel surface */
+  --paper-sunk: #eeefe9;     /* inset fields */
+  --rule: #c9ccc4;           /* hairlines */
+  --rule-soft: #dcdfd8;
+
+  /* --- structure --------------------------------------------------------- */
+  --drape: #234a40;          /* surgical green */
+  --drape-lift: #3e7a69;
+  --drape-wash: #dde6e2;
+  --drape-ink: #f2f5f3;
+
+  /* --- instrument -------------------------------------------------------- */
+  --reticle: #6fd3d8;        /* viewport overlays ONLY */
+  --reticle-dim: #6fd3d859;
+
+  /* --- acuity ------------------------------------------------------------ */
+  --acuity-urgent: #9e2b25;  /* oxblood, not fire-engine */
+  --acuity-prompt: #975d22;  /* ochre, darkened for AA 4.5 as band text */
+  --acuity-routine: #4b753b; /* leaf, darkened for AA 4.5 as band text */
+  --acuity-none: #616966;
+
+  /* --- type -------------------------------------------------------------- */
+  /* The role split encodes the information architecture:
+     serif = the report (a document), sans = console chrome, mono = machine measurements. */
+  --font-report: 'Faustina Variable', 'Faustina', Georgia, 'Times New Roman', serif;
+  --font-ui: 'Public Sans Variable', 'Public Sans', system-ui, -apple-system, sans-serif;
+  --font-data: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --step--1: 0.78rem;
+  --step-0: 0.9375rem;
+  --step-1: 1.125rem;
+  --step-2: 1.45rem;
+  --step-3: clamp(1.7rem, 1.2rem + 1.6vw, 2.25rem);
+
+  /* --- metrics ------------------------------------------------------------ */
+  --rail-h: 44px;
+  --bar-h: 46px;
+  --gap: 1px;                /* panels are separated by rules, not by whitespace */
+  --pad: 1.15rem;
+  --radius: 3px;             /* instruments have edges, not pillows */
+
+  --focus: 0 0 0 2px var(--paper), 0 0 0 4px var(--drape-lift);
+  --dur: 220ms;
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bone);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--step-0);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, p, figure, ul, ol {
+  margin: 0;
+}
+
+ul, ol {
+  padding: 0;
+  list-style: none;
+}
+
+button, input, select, textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+  border-radius: 2px;
+}
+
+/* Numbers the machine produced are always mono, and always tabular so columns line up. */
+.num {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'zero' 1;
+}
+
+/* Field labels read like a printed requisition form: small, uppercase, widely tracked. */
+.label {
+  font-family: var(--font-ui);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-45);
+}
+
+.prose {
+  font-family: var(--font-report);
+  font-size: var(--step-0);
+  line-height: 1.55;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

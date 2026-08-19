@@ -11,7 +11,6 @@
  */
 import type { CueId } from './catalogue.js';
 import type { ImageFeatures } from './schemas.js';
-import { luma } from './image/pixels.js';
 
 /** Linear ramp from `lo` (0) to `hi` (1), clamped at both ends. */
 export function ramp(value: number, lo: number, hi: number): number {
@@ -20,42 +19,88 @@ export function ramp(value: number, lo: number, hi: number): number {
 }
 
 /**
- * Border irregularity of a digitised perfect disc, measured across the fixtures in
- * `testing/fixtures.ts` (1.019 noisy, 0.978 clean, 0.985 small) and asserted by `features.test.ts`.
+ * Border irregularity of a digitised perfect disc: 1.019 noisy, 0.978 clean, 0.985 small, measured
+ * on `testing/fixtures.ts` and asserted by `features.test.ts`. Getting this to the theoretical 1.0
+ * took Kulpa's chain-code factor plus a majority filter on the mask.
  *
- * Getting this to sit at the theoretical 1.0 took two corrections — Kulpa's chain-code factor and
- * a majority filter on the mask. Before them the same disc measured anywhere from 0.98 to 1.48
- * depending on sensor noise, which would have made the cue a noise detector.
+ * It is kept as a documented reference point, but it is deliberately *not* the ramp floor. See
+ * `PHOTOGRAPH_RANGES`.
  */
 export const BORDER_IRREGULARITY_DISC_BASELINE = 1.05;
+
+/**
+ * Ramp endpoints, calibrated on photographs rather than on fixtures.
+ *
+ * This distinction was an outright bug for a while. The ramps were originally anchored to the
+ * synthetic fixtures — a disc measures border irregularity 1.0 and asymmetry 0.006 — so the ramps
+ * spanned roughly 1.05 to 3.0 and 0.03 to 0.30. Real clinical photographs do not live anywhere
+ * near there: measured across the four bundled samples, border irregularity runs 3.8 to 6.5 and
+ * asymmetry 0.14 to 0.40, because a real lesion boundary is genuinely ragged and no amount of mask
+ * smoothing changes that (swept to 12 passes; it converges around 3.3 to 6.1).
+ *
+ * The consequence was that both cues sat pinned at 1.0 activation for *every* photograph. Melanoma
+ * weights those two most heavily, so melanoma led the differential on every real image regardless
+ * of content — a system that looked like it was reading the picture and was not.
+ *
+ * These endpoints span the observed photographic range instead. They are calibrated on four
+ * images, which is few enough that it is a stopgap rather than a fit: the production answer is a
+ * model trained on a labelled dataset, at which point this table is deleted rather than retuned.
+ */
+export const PHOTOGRAPH_RANGES = {
+  asymmetry: [0.12, 0.42],
+  borderIrregularity: [3.2, 7],
+  colourVariegation: [1.2, 5.6],
+  textureRoughness: [2.6, 4.6],
+  /** Mask area as a fraction of the frame. Real captures fill far more of the frame than fixtures. */
+  diameter: [0.02, 0.55],
+  /** Δa* — how much redder the lesion is than this person's own surrounding skin. */
+  erythema: [2, 16],
+  /** ΔL* — how much *darker* the lesion is than the surrounding skin. */
+  pigmentation: [4, 32],
+  /** ΔL* in the other direction: how much lighter, for the pearly translucency of a BCC. */
+  pearlySheen: [3, 20],
+} as const;
 
 export type CueActivations = Record<CueId, number>;
 
 export function featuresToCues(f: ImageFeatures): CueActivations {
   const [r, g, b] = f.meanColour;
-  const l = luma(r, g, b) / 255;
   const maxC = Math.max(r, g, b);
   const minC = Math.min(r, g, b);
   const saturation = maxC > 0 ? (maxC - minC) / maxC : 0;
-  // Redness relative to the other two channels. Erythema raises red without raising luminance.
-  const redness = (r - (g + b) / 2) / 255;
+
+  /*
+   * Colour cues are differences from this person's own unaffected skin, not absolute values.
+   *
+   * The version this replaces measured redness as `(R - (G+B)/2)`, which cannot tell inflammation
+   * from brown pigment — a melanoma scored a *higher* erythema activation than a cellulitis,
+   * because brown is dark orange in RGB. The obvious patch, gating erythema on absolute lightness,
+   * is worse than the bug: it defines one skin tone as the baseline and would systematically
+   * under-detect erythema on darker skin, which is a well-documented failure mode of dermatology
+   * imaging tools.
+   *
+   * Δa* and ΔL* against the segmented reference are tone-invariant and are also what the clinical
+   * question actually is: is this redder, or darker, than the skin around it.
+   */
+  const deltaA = f.lesionLab[1] - f.referenceLab[1];
+  const deltaL = f.lesionLab[0] - f.referenceLab[0];
 
   return {
-    // A rasterised disc measures 0.008; a bitten crescent 0.19, a 7-lobed star 0.28.
-    asymmetry: ramp(f.asymmetry, 0.03, 0.3),
-    // Floor at the measured disc baseline so a circle activates at zero; a bitten crescent
-    // reaches 0.43 and a lobed star saturates.
-    borderIrregularity: ramp(f.borderIrregularity, BORDER_IRREGULARITY_DISC_BASELINE, 3),
+    asymmetry: ramp(f.asymmetry, ...PHOTOGRAPH_RANGES.asymmetry),
+    borderIrregularity: ramp(f.borderIrregularity, ...PHOTOGRAPH_RANGES.borderIrregularity),
     // Perplexity of the perceptually-merged Lab clusters: 1 = one colour, 6 = six distinct ones.
-    colourVariegation: ramp(f.colourHeterogeneity, 1.3, 4),
+    colourVariegation: ramp(f.colourHeterogeneity, ...PHOTOGRAPH_RANGES.colourVariegation),
     // Relative to the frame, since absolute pixels depend on how close the camera was.
-    diameter: ramp(f.maskAreaRatio, 0.02, 0.35),
-    textureRoughness: ramp(f.textureEntropy, 2.6, 4.6),
-    erythema: ramp(redness, 0.04, 0.22),
-    // Dark *and* saturated: pigment, not shadow.
-    pigmentation: ramp(1 - l, 0.35, 0.72) * ramp(saturation, 0.1, 0.45),
-    // Bright, desaturated and glossy — the pearly translucency of a BCC.
-    pearlySheen: ramp(l, 0.5, 0.82) * ramp(1 - saturation, 0.62, 0.9) * ramp(f.brightSpeckleRatio, 0.02, 0.14),
+    diameter: ramp(f.maskAreaRatio, ...PHOTOGRAPH_RANGES.diameter),
+    textureRoughness: ramp(f.textureEntropy, ...PHOTOGRAPH_RANGES.textureRoughness),
+    erythema: ramp(deltaA, ...PHOTOGRAPH_RANGES.erythema),
+    // Darker than the surrounding skin, and saturated: pigment rather than shadow.
+    pigmentation: ramp(-deltaL, ...PHOTOGRAPH_RANGES.pigmentation) * ramp(saturation, 0.1, 0.5),
+    // Lighter than the surrounding skin, desaturated and glossy — a BCC's pearly translucency.
+    pearlySheen:
+      ramp(deltaL, ...PHOTOGRAPH_RANGES.pearlySheen) *
+      ramp(1 - saturation, 0.55, 0.85) *
+      ramp(f.brightSpeckleRatio, 0.02, 0.14),
     scaling: ramp(f.brightSpeckleRatio, 0.04, 0.2),
   };
 }

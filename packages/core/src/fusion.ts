@@ -96,10 +96,50 @@ const ACUITY_RANK: Record<Acuity, number> = { indeterminate: 0, routine: 1, prom
  */
 export const MAX_REPORTED_CONFIDENCE = 0.85;
 
+/**
+ * Probability assigned to a condition an external model did not mention.
+ *
+ * This is load-bearing. A vision LLM returns its top three or four candidates, not a distribution
+ * over the whole catalogue. If an unmentioned condition contributes nothing while a mentioned one
+ * contributes `log(p)` — a negative number — then *not being mentioned* scores better than being
+ * ranked third, and the model's own ordering gets inverted. Absent means "unlikely", so it is
+ * scored as unlikely rather than as silent.
+ */
+const MODEL_ABSENT_FLOOR = 0.01;
+
+/** Mean of an array, for the log-space centring below. */
+function mean(values: number[]): number {
+  return values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+}
+
 export function fuse(input: FuseInput): FuseOutput {
   const w = { ...DEFAULT_WEIGHTS, ...input.weights };
   const cues = input.features ? featuresToCues(input.features) : null;
   const symptoms = scoreSymptoms(input.intake.symptomsText, input.intake.symptomIds);
+
+  /*
+   * Log-probability terms are centred on their own mean across the catalogue.
+   *
+   * A softmax is invariant to adding a constant to every logit, so this changes no ranking and no
+   * probability. What it changes is what the evidence trace *says*: uncentred, `log(p)` is negative
+   * for every p < 1, so the model's own top pick was displayed as arguing against its own top pick
+   * ("MobileCLIP 22.3% posterior … −2.25"). Centred, the sign means what a reader assumes it means
+   * — above or below the catalogue average.
+   */
+  const priorLogs = new Map<ConditionId, number>(
+    RANKABLE.map((c) => [c.id, Math.log(Math.max(c.prior, 1e-4))]),
+  );
+  const priorMean = mean([...priorLogs.values()]);
+
+  const modelLogs = input.modelPosterior
+    ? new Map<ConditionId, number>(
+        RANKABLE.map((c) => [
+          c.id,
+          Math.log(Math.max(input.modelPosterior![c.id] ?? MODEL_ABSENT_FLOOR, 1e-4)),
+        ]),
+      )
+    : null;
+  const modelMean = modelLogs ? mean([...modelLogs.values()]) : 0;
 
   const logOdds = new Map<ConditionId, number>();
   const trace = new Map<ConditionId, EvidenceItem[]>();
@@ -108,7 +148,7 @@ export function fuse(input: FuseInput): FuseOutput {
     const items: EvidenceItem[] = [];
 
     // --- prevalence prior -------------------------------------------------
-    const priorLo = Math.log(Math.max(condition.prior, 1e-4)) * w.prior;
+    const priorLo = (priorLogs.get(condition.id)! - priorMean) * w.prior;
     items.push({
       source: 'prior',
       label: 'Base rate',
@@ -172,15 +212,18 @@ export function fuse(input: FuseInput): FuseOutput {
     }
 
     // --- external model ---------------------------------------------------
-    if (input.modelPosterior) {
-      const p = input.modelPosterior[condition.id];
-      if (p !== undefined && p > 0) {
-        const contribution = Math.log(Math.max(p, 1e-4)) * w.model;
+    if (modelLogs) {
+      const raw = input.modelPosterior![condition.id];
+      const contribution = (modelLogs.get(condition.id)! - modelMean) * w.model;
+      if (Math.abs(contribution) >= 0.01) {
         total += contribution;
         items.push({
           source: 'model',
           label: input.modelLabel ?? 'Model',
-          detail: `${(p * 100).toFixed(1)}% posterior`,
+          detail:
+            raw === undefined
+              ? 'not ranked by the model'
+              : `${(raw * 100).toFixed(1)}% posterior`,
           contribution: r3(contribution),
         });
       }

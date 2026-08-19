@@ -274,3 +274,130 @@ the assertion filters by analysis id.
   actually run, and it is the path the README recommends for that reason.
 - **MongoDB Atlas.** Not provisioned. All Mongo testing was against `mongodb-memory-server` 10.4.3,
   which runs a genuine `mongod`.
+---
+
+## Gate 4 — `apps/web` — **PASS** (2026-08-19)
+
+```
+ ✓ apps/web  e2e/console.spec.ts  10 passed (Playwright, against the production build)
+ ✓ @caliper/core     79 tests
+ ✓ @caliper/service  16 tests
+ ✓ @caliper/api      39 tests   (26 integration + 11 sample calibration + 2 live LLM)
+   144 tests total
+```
+
+`tsc --noEmit` clean. Verified in a real browser at 1440×900 and 390×844, with screenshots reviewed
+against the `PROJECT.md` §7.6 rubric.
+
+### The calibration bug this phase found — the most consequential one in the project
+
+Every image cue was **pinned at 1.0 activation on every real photograph**, so the differential had
+stopped depending on the picture. Melanoma led every case regardless of content.
+
+The cause was a category error in how the cue ramps were calibrated. They were anchored to the
+synthetic fixtures, where a disc measures border irregularity 1.0 and asymmetry 0.006, giving ramps
+of roughly 1.05–3.0 and 0.03–0.30. Real clinical photographs do not live there. Measured across the
+four bundled samples:
+
+| | melanoma | bcc | dermatitis | cellulitis |
+|---|---|---|---|---|
+| border irregularity | 4.2 | 5.4 | 3.5 | 3.8 |
+| asymmetry | 0.14 | 0.30 | 0.20 | 0.24 |
+
+Both of melanoma's dominant cues sat at maximum for all four. The whole suite was green throughout,
+because every unit test asserted against fixtures — the same fixtures the mis-calibration came from.
+
+Before concluding the ramps were wrong, mask smoothing was swept from 2 to 12 passes to check
+whether the roughness was noise. It converges at 3.3–6.1, so it is genuine boundary complexity, not
+something to filter away. Smoothing stayed at 2 and the ramps were re-anchored to the observed
+photographic range (`PHOTOGRAPH_RANGES` in `cues.ts`).
+
+**Guard added:** `apps/api/src/samples.test.ts` runs the four real photographs through the real
+pipeline and asserts that no more than two cues saturate, that the four produce distinct
+measurements, that at least three distinct conditions lead across the set, and that each reaches
+its expected disposition. That is the test that would have caught this.
+
+### A fairness defect found while fixing the above
+
+Erythema was `(R − (G+B)/2)`, which cannot distinguish inflammation from brown pigment — brown is
+dark orange in RGB, so a melanoma scored a *higher* erythema activation than a cellulitis.
+
+The obvious patch is to gate erythema on absolute lightness. That is worse than the bug: it makes
+one skin tone the implicit baseline and would systematically under-detect erythema on darker skin,
+which is a documented failure mode of dermatology imaging tools.
+
+Colour cues are now differences from the patient's **own** surrounding skin — Δa\* for erythema,
+ΔL\* for pigmentation and pearly sheen, against the reference colour segmentation already computes.
+Tone-invariant, and closer to the actual clinical question: is this redder, or darker, than the skin
+around it. `ImageFeatures` now carries `lesionLab` and `referenceLab` so the comparison is visible
+in the API response rather than hidden in a coefficient.
+
+Also fixed here: the reference skin colour is now a per-channel **median** of the border band rather
+than a mean. A real photograph's border catches hair, clothing and background; a mean is dragged
+toward those, and the delta-E threshold then selects half the frame. The BCC sample segmented at 28%
+of frame under the mean and finds the lesion under the median.
+
+### Behaviour of the four bundled samples, at the committed settings
+
+| Sample | Top-1 | Confidence | Acuity | Note |
+|---|---|---|---|---|
+| Pigmented lesion, changing | Melanoma | 37% | urgent | colour variegation and pigmentation lead |
+| Pearly nodule, non-healing | **abstains** | 22% | urgent | melanoma and BCC tie exactly; declines but still escalates |
+| Itchy, dry patch | Eczema / dermatitis | 28% | routine | erythema without pigment |
+| Hot, spreading redness | Cellulitis | 58% | urgent | erythema plus systemic symptoms |
+
+Three distinct dispositions plus a live demonstration of abstention. The BCC case is an honest
+limitation on display: with colour measured relative to surrounding skin, a lesion neither darker
+nor redder than its background yields no colour signal, and this heuristic has nothing trained to
+recognise a pearly border.
+
+### Two more defects fixed from browser inspection
+
+**Model evidence displayed with an inverted sign.** Contributions were raw `log(p)`, negative for
+every p < 1, so the trace read `MobileCLIP … 22.3% posterior … −2.25` — the model appearing to
+argue against its own top pick. Log terms are now centred on their mean across the catalogue, which
+changes no ranking (a softmax is invariant to adding a constant) but makes the displayed sign mean
+what a reader assumes.
+
+**Sparse posteriors inverted the model's own ordering.** A vision LLM returns its top three or four
+candidates, not a distribution. Unmentioned conditions contributed 0 while mentioned ones
+contributed `log(p) < 0` — so *not being mentioned* outscored *being ranked third*. Unmentioned
+conditions now take a floor probability. Tested.
+
+### Design rubric (`PROJECT.md` §7.6) — checked against the built bundle
+
+| Check | Result |
+|---|---|
+| No violet or indigo hue | **pass** — every hex in the built CSS parsed; nothing in the 240–300° band |
+| Inter not loaded | **pass** — fonts shipped are Faustina, Public Sans, IBM Plex Mono only |
+| No three-equal-card feature grid | **pass** — three-column console, no card grid anywhere |
+| Headline is specific to this product | **pass** — "Caliper — assistive triage console" |
+| One accent colour, not several | **pass** — `--reticle` appears only on viewport overlays |
+| No icon where a word is clearer | **pass** — no icon library in the bundle; the only SVG is the measured contour |
+| No gradients | **pass** — the only two are 1px graticule hairlines and the overlay scrim |
+| No secrets in the bundle | **pass** — grepped for `sk-`, `Bearer`, JWT prefixes, key names |
+
+### Accessibility
+
+Nineteen foreground/background pairs computed. Four failed WCAG AA 4.5:1 and were corrected by
+solving for the required luminance rather than by eye — `--ink-45` 4.34→5.09, `--ink-25` 2.42→4.65,
+`--acuity-prompt` 3.31→4.65, `--acuity-routine` 4.35→4.65. All nineteen now pass.
+
+Also verified: visible focus rings on every control, `prefers-reduced-motion` disables all three
+animations, keyboard reachability asserted by e2e, no horizontal page overflow at 390px
+(`scrollWidth === clientWidth`; the pipeline rail scrolls inside its own container by design, and
+on narrow screens collapses to tick marks plus the active stage).
+
+### On-device model, verified in a browser
+
+Loaded on click, ran, and produced a posterior that reached the readout:
+
+```
+Provider   on-device-clip
+Model      mobileclip_s0 (zero-shot)
+Compute    1519 ms
+Evidence   MobileCLIP S0 (zero-shot)   22.3% posterior
+```
+
+Initial page load does not touch it: the 23 MB ONNX runtime and the 559 kB transformers chunk are
+split out and fetched only on opt-in. First load is a 374 kB JS chunk plus fonts.

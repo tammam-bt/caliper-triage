@@ -1,0 +1,96 @@
+- generic [ref=f2e3]:
+  - banner [ref=f2e4]:
+    - generic [ref=f2e5]: Caliper
+    - generic [ref=f2e7]:
+      - generic "Where the API handlers are executing" [ref=f2e8]: in-browser API
+      - button "API (0)" [ref=f2e10] [cursor=pointer]
+      - link "source" [ref=f2e11] [cursor=pointer]:
+        - /url: https://github.com/tammam-bt/caliper-triage
+  - main [ref=f2e12]:
+    - region "Intake" [ref=f2e13]:
+      - generic [ref=f2e14]:
+        - generic [ref=f2e15]: "01"
+        - heading "Intake" [level=2] [ref=f2e16]
+      - generic [ref=f2e17]:
+        - generic [ref=f2e18]:
+          - generic [ref=f2e19]: Sample cases
+          - generic [ref=f2e20]:
+            - button "Pigmented lesion, changing" [ref=f2e21] [cursor=pointer]
+            - button "Pearly nodule, non-healing" [ref=f2e22] [cursor=pointer]
+            - button "Scaly plaque" [ref=f2e23] [cursor=pointer]
+            - button "Hot, spreading redness" [ref=f2e24] [cursor=pointer]
+          - generic [ref=f2e25]: Loads a real clinical photograph and a plausible history. Credits in the repository.
+        - generic [ref=f2e26]:
+          - generic [ref=f2e27]: Symptoms
+          - textbox "Symptoms" [ref=f2e28]:
+            - /placeholder: Describe what the patient reports. Negations are understood — “no fever, but it is spreading” scores the way you would expect.
+        - generic [ref=f2e29]:
+          - generic [ref=f2e30]: Reported findings
+          - generic [ref=f2e31]:
+            - button "changing" [ref=f2e32] [cursor=pointer]
+            - button "growing" [ref=f2e33] [cursor=pointer]
+            - button "bleeding" [ref=f2e34] [cursor=pointer]
+            - button "itching" [ref=f2e35] [cursor=pointer]
+            - button "painful" [ref=f2e36] [cursor=pointer]
+            - button "non-healing" [ref=f2e37] [cursor=pointer]
+            - button "spreading" [ref=f2e38] [cursor=pointer]
+            - button "fever" [ref=f2e39] [cursor=pointer]
+            - button "swollen" [ref=f2e40] [cursor=pointer]
+            - button "hot" [ref=f2e41] [cursor=pointer]
+            - button "dry" [ref=f2e42] [cursor=pointer]
+            - button "unchanged" [ref=f2e43] [cursor=pointer]
+        - generic [ref=f2e44]:
+          - generic [ref=f2e45]: Suspected condition (optional)
+          - combobox "Suspected condition (optional)" [ref=f2e46]:
+            - option "No suspicion recorded" [selected]
+            - option "Melanoma"
+            - option "Basal cell carcinoma"
+            - option "Squamous cell carcinoma"
+            - option "Benign melanocytic naevus"
+            - option "Seborrhoeic keratosis"
+            - option "Eczema / dermatitis"
+            - option "Psoriasis"
+            - option "Cellulitis"
+          - generic [ref=f2e47]: Counted as one piece of evidence among several. It cannot decide the differential on its own.
+        - generic [ref=f2e48]:
+          - generic [ref=f2e49]:
+            - generic [ref=f2e50]: Body site
+            - textbox "Body site" [ref=f2e51]:
+              - /placeholder: upper back
+          - generic [ref=f2e52]:
+            - generic [ref=f2e53]: Duration (days)
+            - textbox "Duration (days)" [ref=f2e54]:
+              - /placeholder: "120"
+        - generic [ref=f2e55] [cursor=pointer]:
+          - checkbox "The lesion has changed recently — in size, shape, colour or sensation." [ref=f2e56]
+          - generic [ref=f2e57]: The lesion has changed recently — in size, shape, colour or sensation.
+        - generic [ref=f2e58]:
+          - button "Run assessment" [disabled] [ref=f2e59]
+          - generic [ref=f2e60]: An image or clip is required before an assessment can run.
+          - button "Clear case" [ref=f2e61] [cursor=pointer]
+    - region "Specimen viewport" [ref=f2e62]:
+      - generic [ref=f2e63]:
+        - generic [ref=f2e64]:
+          - generic [ref=f2e65]: awaiting media
+          - paragraph [ref=f2e67]: Drop a photograph or a short clip here, paste one, or choose a sample case. Include a margin of normal skin around the area.
+          - button "Choose a file" [ref=f2e68] [cursor=pointer]
+        - button "Choose File" [ref=f2e69]
+    - region "Assessment" [ref=f2e71]:
+      - generic [ref=f2e72]:
+        - generic [ref=f2e73]: "02"
+        - heading "Assessment" [level=2] [ref=f2e74]
+      - generic [ref=f2e75]:
+        - generic [ref=f2e76]:
+          - generic [ref=f2e77]:
+            - generic [ref=f2e78]: On-device neural model
+            - generic [ref=f2e79]: 22.9 MB
+          - paragraph [ref=f2e80]: MobileCLIP S0, run locally in this browser. It is a general-purpose image model standing in for a fine-tuned diagnostic network — real inference on your pixels, not a clinical classifier. Without it, assessment uses the measured features alone.
+          - button "Load model (22.9 MB)" [ref=f2e81] [cursor=pointer]
+        - generic [ref=f2e82]:
+          - generic [ref=f2e83]:
+            - paragraph [ref=f2e84]: No case yet.
+            - paragraph [ref=f2e85]: Add a photograph and any symptoms, then run the assessment.
+          - complementary [ref=f2e86]:
+            - strong [ref=f2e87]: Not a medical device.
+            - text: Caliper is an engineering prototype. It is not clinically validated, has not been trained on a labelled dataset, and must not be used to make a care decision. Its coefficients are illustrative. Seek assessment from a qualified clinician.
+  - navigation "Analysis pipeline" [ref=f2e88]

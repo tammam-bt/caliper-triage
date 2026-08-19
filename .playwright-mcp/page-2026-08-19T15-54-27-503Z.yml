@@ -1,0 +1,165 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: Caliper
+      - generic [ref=e7]: assistive triage console
+    - generic [ref=e8]:
+      - generic "Where the API handlers are executing" [ref=e9]: in-browser API
+      - generic "Provider producing the assessment" [ref=e11]: abcd-heuristic-v1
+      - link "source" [ref=e12] [cursor=pointer]:
+        - /url: https://github.com/tammam-bt/caliper-triage
+  - main [ref=e13]:
+    - region "Intake" [ref=e14]:
+      - generic [ref=e15]:
+        - generic [ref=e16]: "01"
+        - heading "Intake" [level=2] [ref=e17]
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - generic [ref=e20]: Sample cases
+          - generic [ref=e21]:
+            - button "Pigmented lesion, changing" [ref=e22] [cursor=pointer]
+            - button "Pearly nodule, non-healing" [ref=e23] [cursor=pointer]
+            - button "Scaly plaque" [ref=e24] [cursor=pointer]
+            - button "Hot, spreading redness" [ref=e25] [cursor=pointer]
+          - generic [ref=e26]: Loads a real clinical photograph and a plausible history. Credits in the repository.
+        - generic [ref=e27]:
+          - generic [ref=e28]: Symptoms
+          - textbox "Symptoms" [ref=e29]:
+            - /placeholder: Describe what the patient reports. Negations are understood — “no fever, but it is spreading” scores the way you would expect.
+            - text: Pigmented lesion on the upper back. Changing over the past four months, the border has become irregular and it bled once after catching on clothing.
+        - generic [ref=e30]:
+          - generic [ref=e31]: Reported findings
+          - generic [ref=e32]:
+            - button "changing" [pressed] [ref=e33] [cursor=pointer]
+            - button "growing" [ref=e34] [cursor=pointer]
+            - button "bleeding" [pressed] [ref=e35] [cursor=pointer]
+            - button "itching" [ref=e36] [cursor=pointer]
+            - button "painful" [ref=e37] [cursor=pointer]
+            - button "non-healing" [ref=e38] [cursor=pointer]
+            - button "spreading" [ref=e39] [cursor=pointer]
+            - button "fever" [ref=e40] [cursor=pointer]
+            - button "swollen" [ref=e41] [cursor=pointer]
+            - button "hot" [ref=e42] [cursor=pointer]
+            - button "dry" [ref=e43] [cursor=pointer]
+            - button "unchanged" [ref=e44] [cursor=pointer]
+        - generic [ref=e45]:
+          - generic [ref=e46]: Suspected condition (optional)
+          - combobox "Suspected condition (optional)" [ref=e47]:
+            - option "No suspicion recorded" [selected]
+            - option "Melanoma"
+            - option "Basal cell carcinoma"
+            - option "Squamous cell carcinoma"
+            - option "Benign melanocytic naevus"
+            - option "Seborrhoeic keratosis"
+            - option "Eczema / dermatitis"
+            - option "Psoriasis"
+            - option "Cellulitis"
+          - generic [ref=e48]: Counted as one piece of evidence among several. It cannot decide the differential on its own.
+        - generic [ref=e49]:
+          - generic [ref=e50]:
+            - generic [ref=e51]: Body site
+            - textbox "Body site" [ref=e52]:
+              - /placeholder: upper back
+          - generic [ref=e53]:
+            - generic [ref=e54]: Duration (days)
+            - textbox "Duration (days)" [ref=e55]:
+              - /placeholder: "120"
+              - text: "120"
+        - generic [ref=e56] [cursor=pointer]:
+          - checkbox "The lesion has changed recently — in size, shape, colour or sensation." [checked] [ref=e57]
+          - generic [ref=e58]: The lesion has changed recently — in size, shape, colour or sensation.
+        - generic [ref=e59]:
+          - button "Run assessment" [ref=e108] [cursor=pointer]
+          - button "Clear case" [ref=e62] [cursor=pointer]
+    - region "Specimen viewport" [ref=e63]:
+      - generic [ref=e64]:
+        - figure [ref=e105]:
+          - img "Uploaded specimen" [ref=e106]
+        - button "Choose File" [ref=e70]
+        - generic:
+          - generic:
+            - term: dim
+            - definition: 900×626
+          - generic:
+            - term: σ²L
+            - definition: "2051.5"
+        - generic:
+          - generic:
+            - term: A
+            - definition: "0.155"
+          - generic:
+            - term: B
+            - definition: "6.17"
+          - generic:
+            - term: C
+            - definition: "5.69"
+        - generic:
+          - generic:
+            - term: rgb
+            - definition: 119 62 49
+          - generic:
+            - term: area
+            - definition: 43.6%
+        - generic: 787 px
+    - region "Assessment" [ref=e72]:
+      - generic [ref=e73]:
+        - generic [ref=e74]: "02"
+        - heading "Assessment" [level=2] [ref=e75]
+      - generic [ref=e76]:
+        - generic [ref=e77]:
+          - generic [ref=e78]:
+            - generic [ref=e79]: On-device neural model
+            - generic [ref=e80]: 22.9 MB
+          - paragraph [ref=e81]: MobileCLIP S0, run locally in this browser. It is a general-purpose image model standing in for a fine-tuned diagnostic network — real inference on your pixels, not a clinical classifier. Without it, assessment uses the measured features alone.
+          - button "Load model (22.9 MB)" [ref=e82] [cursor=pointer]
+        - generic [ref=e83]:
+          - generic [ref=e109]:
+            - generic [ref=e110]: Urgent — same-day review
+            - paragraph [ref=e111]: Refer for same-day or urgent dermatology assessment.
+          - generic [ref=e112]:
+            - heading "Melanoma" [level=2] [ref=e113]
+            - generic [ref=e114]:
+              - generic [ref=e115]: 72%
+              - text: confidence
+          - region "Differential" [ref=e116]:
+            - heading "Differential" [level=3] [ref=e117]
+            - button "Melanoma 72.0%" [ref=e118] [cursor=pointer]:
+              - generic [ref=e119]: Melanoma
+              - generic [ref=e120]: 72.0%
+            - button "Squamous cell carcinoma 6.7%" [ref=e123] [cursor=pointer]:
+              - generic [ref=e124]: Squamous cell carcinoma
+              - generic [ref=e125]: 6.7%
+            - button "Seborrhoeic keratosis 5.4%" [ref=e128] [cursor=pointer]:
+              - generic [ref=e129]: Seborrhoeic keratosis
+              - generic [ref=e130]: 5.4%
+            - button "Basal cell carcinoma 4.3%" [ref=e133] [cursor=pointer]:
+              - generic [ref=e134]: Basal cell carcinoma
+              - generic [ref=e135]: 4.3%
+            - button "Cellulitis 4.2%" [ref=e138] [cursor=pointer]:
+              - generic [ref=e139]: Cellulitis
+              - generic [ref=e140]: 4.2%
+            - button "Eczema / dermatitis 3.8%" [ref=e143] [cursor=pointer]:
+              - generic [ref=e144]: Eczema / dermatitis
+              - generic [ref=e145]: 3.8%
+          - region "Provenance" [ref=e148]:
+            - generic [ref=e150]:
+              - generic [ref=e151]: Provider
+              - generic [ref=e152]: cv-heuristic
+            - generic [ref=e153]:
+              - generic [ref=e154]: Model
+              - generic [ref=e155]: abcd-heuristic-v1
+            - generic [ref=e156]:
+              - generic [ref=e157]: Compute
+              - generic [ref=e158]: 569 ms
+          - complementary [ref=e159]:
+            - strong [ref=e160]: Not a medical device.
+            - text: Caliper is an engineering prototype. It is not clinically validated, has not been trained on a labelled dataset, and must not be used to make a care decision. Its coefficients are illustrative. Seek assessment from a qualified clinician.
+  - navigation "Analysis pipeline" [ref=e89]:
+    - generic [ref=e90]: received
+    - generic [ref=e92]: preprocess
+    - generic [ref=e94]: features
+    - generic [ref=e96]: inference
+    - generic [ref=e98]: fusion
+    - generic [ref=e100]: complete
+    - generic [ref=e103]: Combined image, intake and model evidence · 569 ms compute
+  - button "API inspector (9)" [ref=e107] [cursor=pointer]

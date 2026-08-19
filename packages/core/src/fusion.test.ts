@@ -13,6 +13,14 @@ const run = (over: Partial<FuseInput> = {}) =>
   fuse({ intake: intake(), quality: OK, features: extractFeatures(disc(70)).features, ...over });
 
 describe('output shape', () => {
+  it('centres the base-rate term so common conditions read positive', () => {
+    const out = run();
+    const base = (id: string) =>
+      out.candidates.find((c) => c.conditionId === id)!.evidence.find((e) => e.label === 'Base rate')!;
+    expect(base('benign_nevus').contribution).toBeGreaterThan(0);
+    expect(base('melanoma').contribution).toBeLessThan(0);
+  });
+
   it('returns a full ranked differential that sums to one', () => {
     const out = run();
     expect(out.candidates.length).toBe(8);
@@ -198,6 +206,33 @@ describe('external model posterior', () => {
     const out = run({ modelPosterior: { psoriasis: 0.9 }, modelLabel: 'MobileCLIP S0 (zero-shot)' });
     const pso = out.candidates.find((c) => c.conditionId === 'psoriasis')!;
     expect(pso.evidence.some((e) => e.source === 'model' && e.label.includes('MobileCLIP'))).toBe(true);
+  });
+
+  it('scores an unmentioned condition as unlikely, not as neutral', () => {
+    // A vision LLM returns its top few candidates, not a full distribution. If "absent" scored 0
+    // while "ranked third" scored log(p) < 0, then omission would beat inclusion and the model's
+    // own ordering would invert.
+    const out = run({ modelPosterior: { psoriasis: 0.9, melanoma: 0.05 }, modelLabel: 'M' });
+    const evidenceFor = (id: string) =>
+      out.candidates.find((c) => c.conditionId === id)!.evidence.find((e) => e.source === 'model');
+
+    const ranked1 = evidenceFor('psoriasis')!.contribution;
+    const ranked2 = evidenceFor('melanoma')!.contribution;
+    const unmentioned = evidenceFor('cellulitis')!;
+
+    // The ordering the model expressed must survive fusion intact.
+    expect(ranked1).toBeGreaterThan(ranked2);
+    expect(ranked2).toBeGreaterThan(unmentioned.contribution);
+    expect(unmentioned.detail).toMatch(/not ranked/);
+    expect(unmentioned.contribution).toBeLessThan(0);
+  });
+
+  it('gives the model’s own top pick a positive contribution', () => {
+    // Uncentred log-probabilities made every model contribution negative, so the trace showed the
+    // model arguing against the condition it had just ranked first.
+    const out = run({ modelPosterior: { psoriasis: 0.223, melanoma: 0.1 }, modelLabel: 'M' });
+    const pso = out.candidates.find((c) => c.conditionId === 'psoriasis')!;
+    expect(pso.evidence.find((e) => e.source === 'model')!.contribution).toBeGreaterThan(0);
   });
 
   it('does not let the model alone override a failed quality gate', () => {

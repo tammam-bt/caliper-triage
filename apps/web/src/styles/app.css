@@ -1,0 +1,1119 @@
+/* ============================================================================
+   Console shell
+   The app is an instrument panel, not a page: full height, no marketing scroll.
+   Panels are separated by 1px rules on a darker ground rather than by floating
+   cards, because a card grid is the shape of a landing page and this is a tool.
+   ========================================================================= */
+
+.console {
+  display: grid;
+  grid-template-rows: var(--bar-h) minmax(0, 1fr) var(--rail-h);
+  height: 100%;
+  background: var(--rule);
+  gap: var(--gap);
+}
+
+/* --- top bar -------------------------------------------------------------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0 var(--pad);
+  background: var(--drape);
+  color: var(--drape-ink);
+}
+
+.topbar__mark {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+}
+
+.topbar__name {
+  font-family: var(--font-report);
+  font-size: var(--step-1);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.topbar__tagline {
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #ffffffa8;
+}
+
+.topbar__spacer {
+  flex: 1;
+}
+
+.topbar__meta {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  font-family: var(--font-data);
+  font-size: 0.7rem;
+  color: #ffffffbf;
+}
+
+.topbar__mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.topbar__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--reticle);
+}
+
+.topbar__link {
+  color: #ffffffbf;
+  text-decoration: none;
+  border-bottom: 1px solid #ffffff40;
+  padding-bottom: 1px;
+}
+
+.topbar__link:hover {
+  color: #fff;
+  border-bottom-color: #fff;
+}
+
+.topbar__button {
+  background: none;
+  border: none;
+  border-bottom: 1px solid #ffffff40;
+  padding: 0 0 1px;
+  cursor: pointer;
+  font-family: var(--font-data);
+  font-size: 0.7rem;
+}
+
+/* --- workspace ------------------------------------------------------------ */
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(280px, 22rem) minmax(0, 1fr) minmax(300px, 25rem);
+  gap: var(--gap);
+  min-height: 0;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--paper);
+  overflow: hidden;
+}
+
+.panel__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.7rem var(--pad) 0.55rem;
+  border-bottom: 1px solid var(--rule-soft);
+  background: var(--paper);
+}
+
+/* Step numbers are information here: intake genuinely precedes assessment. */
+.panel__step {
+  font-family: var(--font-data);
+  font-size: 0.68rem;
+  color: var(--drape-lift);
+}
+
+.panel__title {
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.panel__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--pad);
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+/* ============================================================================
+   Intake
+   ========================================================================= */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.field__hint {
+  font-size: 0.72rem;
+  color: var(--ink-45);
+  font-family: var(--font-report);
+}
+
+.input,
+.textarea,
+.select {
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  background: var(--paper-sunk);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  font-family: var(--font-report);
+  font-size: var(--step-0);
+  transition: border-color var(--dur) var(--ease);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 5.2rem;
+  line-height: 1.45;
+}
+
+.input:hover,
+.textarea:hover,
+.select:hover {
+  border-color: var(--ink-25);
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+  border-color: var(--drape-lift);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.chip {
+  padding: 0.24rem 0.55rem;
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  font-size: 0.76rem;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.chip:hover {
+  border-color: var(--drape-lift);
+}
+
+.chip[aria-pressed='true'] {
+  background: var(--drape);
+  border-color: var(--drape);
+  color: var(--drape-ink);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+}
+
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-family: var(--font-report);
+  font-size: 0.88rem;
+}
+
+.check input {
+  margin-top: 0.22rem;
+  accent-color: var(--drape);
+}
+
+.actions {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding-top: 0.6rem;
+}
+
+.button {
+  padding: 0.62rem 1rem;
+  background: var(--drape);
+  color: var(--drape-ink);
+  border: 1px solid var(--drape);
+  border-radius: var(--radius);
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease);
+}
+
+.button:hover:not(:disabled) {
+  background: var(--drape-lift);
+  border-color: var(--drape-lift);
+}
+
+.button:disabled {
+  background: var(--rule-soft);
+  border-color: var(--rule);
+  color: var(--ink-45);
+  cursor: not-allowed;
+}
+
+.button--quiet {
+  background: transparent;
+  color: var(--ink-70);
+  border-color: var(--rule);
+}
+
+.button--quiet:hover:not(:disabled) {
+  background: var(--drape-wash);
+  border-color: var(--drape-lift);
+  color: var(--ink);
+}
+
+.samples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.samples__button {
+  padding: 0.3rem 0.5rem;
+  background: transparent;
+  border: 1px dashed var(--rule);
+  border-radius: var(--radius);
+  font-size: 0.74rem;
+  cursor: pointer;
+  color: var(--ink-70);
+}
+
+.samples__button:hover {
+  border-style: solid;
+  border-color: var(--drape-lift);
+  color: var(--ink);
+}
+
+/* ============================================================================
+   Specimen viewport — the signature element
+   Dark ground against pale chrome, corner metadata in mono, a scale bar, and a
+   contour that draws itself over the user's own photograph as the features
+   stage completes. Every number on it is measured, not decorative.
+   ========================================================================= */
+
+.viewport {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--ink);
+  color: #e6ecea;
+}
+
+.viewport__stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.viewport__media {
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
+}
+
+.viewport__frame {
+  position: relative;
+  display: block;
+  line-height: 0;
+}
+
+.viewport__overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.contour {
+  fill: none;
+  stroke: var(--reticle);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.contour--drawing {
+  animation: draw-contour 900ms var(--ease) forwards;
+}
+
+@keyframes draw-contour {
+  from { stroke-dashoffset: var(--contour-length); }
+  to { stroke-dashoffset: 0; }
+}
+
+.contour-halo {
+  fill: none;
+  stroke: #000;
+  stroke-opacity: 0.45;
+  stroke-width: 3.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.axis {
+  stroke: var(--reticle-dim);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Corner metadata, the way a clinical capture or a DICOM viewer annotates a frame. */
+.viewport__meta {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  gap: 0.85rem;
+  font-family: var(--font-data);
+  font-size: 0.66rem;
+  letter-spacing: 0.02em;
+  color: #cfe6e4d9;
+  text-shadow: 0 1px 3px #000c;
+  pointer-events: none;
+}
+
+.viewport__meta--tl { top: 0.7rem; left: 0.85rem; }
+.viewport__meta--tr { top: 0.7rem; right: 0.85rem; }
+.viewport__meta--bl { bottom: 0.7rem; left: 0.85rem; }
+.viewport__meta--br { bottom: 0.7rem; right: 0.85rem; align-items: center; }
+
+/*
+ * Corner annotations sit over the user's photograph, and a photograph can be any brightness. A
+ * text-shadow alone disappears against pale skin, which is most of this subject matter. Scrims
+ * are the standard fix and the reason a DICOM viewer's overlays are always readable.
+ */
+.viewport__stage::before,
+.viewport__stage::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 4.5rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.viewport__stage::before {
+  top: 0;
+  background: linear-gradient(to bottom, #000000a6, transparent);
+}
+
+.viewport__stage::after {
+  bottom: 0;
+  background: linear-gradient(to top, #000000a6, transparent);
+}
+
+.viewport__meta {
+  z-index: 2;
+}
+
+.viewport__meta dt {
+  color: #8fa8a5;
+}
+
+.viewport__meta dd {
+  margin: 0;
+}
+
+.metric {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.scalebar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.scalebar__rule {
+  height: 7px;
+  border: 1px solid var(--reticle);
+  border-top: none;
+  width: var(--scalebar-width, 80px);
+}
+
+/* --- empty state: a graticule waiting for media --------------------------- */
+
+.viewport__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.graticule {
+  width: min(230px, 45vw);
+  height: min(230px, 45vw);
+  border: 1px solid #ffffff26;
+  background-image:
+    linear-gradient(to right, #ffffff12 1px, transparent 1px),
+    linear-gradient(to bottom, #ffffff12 1px, transparent 1px);
+  background-size: 25% 25%;
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+
+.graticule::before,
+.graticule::after {
+  content: '';
+  position: absolute;
+  background: var(--reticle-dim);
+}
+
+.graticule::before { width: 100%; height: 1px; }
+.graticule::after { width: 1px; height: 100%; }
+
+.graticule__note {
+  font-family: var(--font-data);
+  font-size: 0.66rem;
+  color: #8fa8a5;
+  position: relative;
+  background: var(--ink);
+  padding: 0 0.4rem;
+}
+
+.viewport__prompt {
+  font-family: var(--font-report);
+  font-size: var(--step-0);
+  color: #b9c6c3;
+  max-width: 32ch;
+}
+
+.viewport__dropzone {
+  position: absolute;
+  inset: 0;
+  border: 2px dashed transparent;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+
+.viewport__dropzone[data-over='true'] {
+  border-color: var(--reticle);
+  background: #6fd3d814;
+}
+
+/* --- frame strip (video) --------------------------------------------------- */
+
+.framestrip {
+  display: flex;
+  gap: 2px;
+  padding: 0.5rem 0.85rem;
+  border-top: 1px solid #ffffff1a;
+  overflow-x: auto;
+}
+
+.framestrip__item {
+  position: relative;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 1px solid transparent;
+  background: none;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.framestrip__item[aria-pressed='true'] {
+  border-color: var(--reticle);
+}
+
+.framestrip__item img {
+  height: 44px;
+  display: block;
+}
+
+.framestrip__key {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  font-family: var(--font-data);
+  font-size: 0.56rem;
+  background: var(--reticle);
+  color: var(--ink);
+  padding: 0 3px;
+}
+
+/* ============================================================================
+   Assessment
+   ========================================================================= */
+
+.assessment {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.acuity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem 0.9rem;
+  border-left: 4px solid var(--acuity-none);
+  background: var(--paper-sunk);
+}
+
+.acuity[data-band='urgent'] { border-left-color: var(--acuity-urgent); }
+.acuity[data-band='prompt'] { border-left-color: var(--acuity-prompt); }
+.acuity[data-band='routine'] { border-left-color: var(--acuity-routine); }
+
+.acuity__band {
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.acuity[data-band='urgent'] .acuity__band { color: var(--acuity-urgent); }
+.acuity[data-band='prompt'] .acuity__band { color: var(--acuity-prompt); }
+.acuity[data-band='routine'] .acuity__band { color: var(--acuity-routine); }
+.acuity[data-band='indeterminate'] .acuity__band { color: var(--acuity-none); }
+
+.acuity__guidance {
+  font-family: var(--font-report);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.headline {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.headline__name {
+  font-family: var(--font-report);
+  font-size: var(--step-2);
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.headline__confidence {
+  text-align: right;
+  flex: 0 0 auto;
+}
+
+.headline__value {
+  font-family: var(--font-data);
+  font-size: var(--step-3);
+  font-weight: 500;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.differential {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.candidate {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.15rem 0.6rem;
+  padding: 0;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--rule-soft);
+  padding-bottom: 0.45rem;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}
+
+.candidate:hover .candidate__name {
+  color: var(--drape-lift);
+}
+
+.candidate__name {
+  font-family: var(--font-report);
+  font-size: 0.95rem;
+  transition: color var(--dur) var(--ease);
+}
+
+.candidate__value {
+  font-family: var(--font-data);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-70);
+}
+
+.candidate__bar {
+  grid-column: 1 / -1;
+  height: 3px;
+  background: var(--rule-soft);
+  overflow: hidden;
+}
+
+.candidate__fill {
+  display: block;
+  height: 100%;
+  background: var(--drape-lift);
+  transform-origin: left;
+  animation: grow-bar 620ms var(--ease) both;
+}
+
+.candidate[data-acuity='urgent'] .candidate__fill { background: var(--acuity-urgent); }
+.candidate[data-acuity='prompt'] .candidate__fill { background: var(--acuity-prompt); }
+.candidate[data-acuity='routine'] .candidate__fill { background: var(--acuity-routine); }
+
+@keyframes grow-bar {
+  from { transform: scaleX(0); }
+}
+
+.evidence {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--paper-sunk);
+  border-left: 2px solid var(--rule);
+}
+
+.evidence__row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  align-items: baseline;
+  font-size: 0.79rem;
+}
+
+.evidence__label {
+  font-family: var(--font-ui);
+}
+
+.evidence__detail {
+  font-family: var(--font-data);
+  font-size: 0.7rem;
+  color: var(--ink-45);
+  grid-column: 1 / -1;
+  margin-top: -0.2rem;
+}
+
+.evidence__value {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.76rem;
+}
+
+.evidence__value[data-sign='+'] { color: var(--acuity-urgent); }
+.evidence__value[data-sign='-'] { color: var(--acuity-routine); }
+
+.notice {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--rule);
+  border-left-width: 3px;
+  font-family: var(--font-report);
+  font-size: 0.86rem;
+  line-height: 1.45;
+  background: var(--paper-sunk);
+}
+
+.notice--warn { border-left-color: var(--acuity-prompt); }
+.notice--stop { border-left-color: var(--acuity-urgent); }
+
+.notice__measure {
+  font-family: var(--font-data);
+  font-size: 0.72rem;
+  color: var(--ink-45);
+  display: block;
+  margin-top: 0.2rem;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  color: var(--ink-45);
+  font-family: var(--font-report);
+}
+
+.empty__title {
+  font-size: var(--step-1);
+  color: var(--ink-70);
+}
+
+/* --- permanent disclaimer --------------------------------------------------- */
+
+.disclaimer {
+  margin-top: auto;
+  padding: 0.65rem 0.75rem;
+  border-top: 1px solid var(--rule);
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--ink-45);
+}
+
+.disclaimer strong {
+  color: var(--ink-70);
+  font-weight: 600;
+}
+
+/* ============================================================================
+   Pipeline rail — a real sequence, so ordinal markers carry information
+   ========================================================================= */
+
+.rail {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 var(--pad);
+  background: var(--paper);
+  overflow-x: auto;
+}
+
+.rail__stage {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0 0.85rem 0 0;
+  font-family: var(--font-data);
+  font-size: 0.7rem;
+  color: var(--ink-25);
+  white-space: nowrap;
+  transition: color var(--dur) var(--ease);
+}
+
+.rail__stage::after {
+  content: '';
+  width: 14px;
+  height: 1px;
+  background: var(--rule);
+  margin-left: 0.85rem;
+}
+
+.rail__stage:last-child::after {
+  display: none;
+}
+
+.rail__tick {
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--rule);
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.rail__stage[data-state='active'] {
+  color: var(--drape);
+}
+
+.rail__stage[data-state='active'] .rail__tick {
+  border-color: var(--drape);
+  background: var(--drape);
+}
+
+.rail__stage[data-state='done'] {
+  color: var(--ink-70);
+}
+
+.rail__stage[data-state='done'] .rail__tick {
+  border-color: var(--drape-lift);
+  background: var(--drape-lift);
+}
+
+.rail__stage[data-state='failed'] {
+  color: var(--acuity-urgent);
+}
+
+.rail__stage[data-state='failed'] .rail__tick {
+  border-color: var(--acuity-urgent);
+  background: var(--acuity-urgent);
+}
+
+.rail__message {
+  margin-left: auto;
+  padding-left: 1rem;
+  font-family: var(--font-data);
+  font-size: 0.68rem;
+  color: var(--ink-45);
+  white-space: nowrap;
+}
+
+/* ============================================================================
+   API inspector
+   Turns the deployment constraint into something a reviewer can read: the real
+   request and response envelopes the handlers exchanged.
+   ========================================================================= */
+
+.inspector {
+  position: fixed;
+  right: 0;
+  bottom: var(--rail-h);
+  width: min(560px, 100vw);
+  max-height: 62vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--ink);
+  color: #dfe8e6;
+  border-left: 1px solid #ffffff1f;
+  border-top: 1px solid #ffffff1f;
+  z-index: 20;
+}
+
+.inspector__head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.85rem;
+  border-bottom: 1px solid #ffffff1a;
+}
+
+.inspector__title {
+  font-family: var(--font-ui);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.inspector__note {
+  font-family: var(--font-report);
+  font-size: 0.74rem;
+  color: #93a7a4;
+}
+
+.inspector__close {
+  margin-left: auto;
+  background: none;
+  border: 1px solid #ffffff2b;
+  color: inherit;
+  border-radius: var(--radius);
+  padding: 0.15rem 0.5rem;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.inspector__close:hover {
+  border-color: var(--reticle);
+}
+
+.inspector__body {
+  overflow: auto;
+  padding: 0.5rem 0.85rem 0.85rem;
+}
+
+.exchange {
+  border-bottom: 1px solid #ffffff14;
+  padding: 0.45rem 0;
+}
+
+.exchange__line {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  font-family: var(--font-data);
+  font-size: 0.7rem;
+}
+
+.exchange__verb {
+  color: var(--reticle);
+}
+
+.exchange__status {
+  margin-left: auto;
+  color: #93a7a4;
+}
+
+.exchange pre {
+  margin: 0.3rem 0 0;
+  font-family: var(--font-data);
+  font-size: 0.66rem;
+  line-height: 1.45;
+  color: #b9c6c3;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 11rem;
+  overflow: auto;
+}
+
+/* ============================================================================
+   Model loader
+   ========================================================================= */
+
+.model {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper-sunk);
+}
+
+.model__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.model__name {
+  font-family: var(--font-report);
+  font-size: 0.86rem;
+}
+
+.model__size {
+  font-family: var(--font-data);
+  font-size: 0.68rem;
+  color: var(--ink-45);
+}
+
+.model__note {
+  font-family: var(--font-report);
+  font-size: 0.75rem;
+  color: var(--ink-45);
+  line-height: 1.4;
+}
+
+.progressbar {
+  height: 3px;
+  background: var(--rule-soft);
+  overflow: hidden;
+}
+
+.progressbar__fill {
+  display: block;
+  height: 100%;
+  background: var(--drape-lift);
+  transition: width 260ms var(--ease);
+}
+
+/* ============================================================================
+   Responsive
+   Below the console breakpoint the three columns become one scrolling flow,
+   and the rail sticks to the bottom.
+   ========================================================================= */
+
+@media (max-width: 1080px) {
+  .console {
+    grid-template-rows: var(--bar-h) minmax(0, 1fr) var(--rail-h);
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+    grid-auto-rows: min-content;
+    overflow-y: auto;
+  }
+
+  /* The viewport leads on a narrow screen: it is both the subject of the tool and the control
+     that has to be reached first. Intake follows, with the sample cases at its top.
+     Ordered by explicit class — `nth-of-type` counts the viewport, which is also a <section>,
+     so the ordinal selectors silently addressed the wrong elements. */
+  .viewport { order: 1; }
+  .panel--intake { order: 2; }
+  .panel--assessment { order: 3; }
+
+  /* The rail is fixed to the bottom of the grid; without this the last panel's final rows sit
+     underneath it. */
+  .panel__body {
+    padding-bottom: 1.6rem;
+  }
+
+  .panel,
+  .viewport {
+    min-height: auto;
+  }
+
+  .panel__body {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .viewport__stage {
+    min-height: 58vw;
+  }
+
+  .inspector {
+    width: 100vw;
+    max-height: 70vh;
+  }
+}
+
+@media (max-width: 700px) {
+  :root {
+    --pad: 0.85rem;
+  }
+
+  .topbar__tagline {
+    display: none;
+  }
+
+  .topbar__meta {
+    gap: 0.75rem;
+    font-size: 0.64rem;
+    white-space: nowrap;
+  }
+
+  /* Four metadata items do not fit beside the wordmark on a phone. The provider id is the one a
+     reviewer can find again in the API panel, so it is the one that goes. */
+  .topbar__model {
+    display: none;
+  }
+
+  .row {
+    grid-template-columns: 1fr;
+  }
+
+  /* The rail becomes tick marks plus the name of the stage currently running. Six labels and a
+     status message do not fit in 390px, and a strip that scrolls sideways at the very bottom of
+     the screen reads as a broken page rather than as a control. */
+  .rail {
+    overflow-x: hidden;
+  }
+
+  .rail__stage {
+    padding-right: 0;
+  }
+
+  .rail__stage::after {
+    width: 10px;
+    margin-left: 0.5rem;
+  }
+
+  .rail__label {
+    display: none;
+  }
+
+  .rail__stage[data-state='active'] .rail__label,
+  .rail__stage[data-state='failed'] .rail__label {
+    display: inline;
+  }
+
+  .rail__message {
+    padding-left: 0.6rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
