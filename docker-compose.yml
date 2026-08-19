@@ -1,0 +1,32 @@
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports: ['27017:27017']
+    volumes: ['caliper-mongo:/data/db']
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand("ping")']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    ports: ['4000:4000']
+    depends_on:
+      mongo: { condition: service_healthy }
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      MONGODB_URI: mongodb://mongo:27017/caliper
+      CORS_ORIGIN: http://localhost:5173
+      # Override in a real deployment. `assertProductionSafe` refuses to boot on the dev default.
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET before running docker compose up}
+      AI_PROVIDER: ${AI_PROVIDER:-cv-heuristic}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+
+volumes:
+  caliper-mongo:

@@ -213,9 +213,17 @@ export type PipelineEvent = z.infer<typeof PipelineEventSchema>;
 // Transport envelopes
 // ---------------------------------------------------------------------------
 
+/**
+ * What a client may say about its upload. Deliberately *not* `MediaRefSchema`: the storage id is
+ * assigned by the server. A client-chosen media id is a way to overwrite, or read, someone else's
+ * stored media.
+ */
+export const MediaUploadSchema = MediaRefSchema.omit({ id: true });
+export type MediaUpload = z.infer<typeof MediaUploadSchema>;
+
 export const SubmitAnalysisRequestSchema = z.object({
   intake: IntakeSchema,
-  media: MediaRefSchema,
+  media: MediaUploadSchema,
   /** Client-generated. Re-submitting the same key returns the original analysis. */
   idempotencyKey: z.string().min(8).max(128).optional(),
 });

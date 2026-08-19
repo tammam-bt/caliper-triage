@@ -180,3 +180,97 @@ feature values — the guarantee that output is a function of the pixels rather 
 
 One packaging fix was needed: `@caliper/core` now exports a `./testing` subpath so other packages
 can use the synthetic fixtures without reaching into `src/`.
+---
+
+## Gate 3 — `apps/api` — **PASS** (2026-08-19)
+
+```
+ ✓ src/api.test.ts (26 tests)          real Express + real Mongoose + real GridFS + in-memory MongoDB
+ ✓ src/visionLlm.live.test.ts (2)      skipped without OPENROUTER_API_KEY; run live, see below
+   Tests  26 passed (26)
+```
+
+`tsc --noEmit` clean. Only the inference provider is substituted in the integration suite; routes,
+models, GridFS and the database are real.
+
+### The bug this phase found
+
+**Every upload in the system was writing to the same GridFS key.** `submitAnalysis` accepted a
+caller-supplied media id, and `app.ts` passed the constant placeholder `'pending'`. So the first
+image uploaded to a given deployment was the image every subsequent analysis measured — across
+analyses and across users. A correctness bug and a data-leak bug at once, and nothing in the API's
+shape would have revealed it: every response was well-formed and plausible.
+
+Caught by the test that submits two visibly different pictures and demands two different
+measurements (`1.019` for a disc, `4.455` for a lobed blob) rather than merely asserting `200 OK`.
+
+Fixed at the source: `SubmitAnalysisRequestSchema` now takes `MediaUploadSchema`, which is
+`MediaRefSchema` with `id` omitted. A client cannot name a storage key, so it cannot overwrite or
+read someone else's. The id is minted in the use-case and nowhere else.
+
+### Live vision-LLM verification
+
+```
+$ OPENROUTER_API_KEY=… npx vitest run src/visionLlm.live.test.ts
+live model: google/gemma-4-26b-a4b-it:free (vision LLM) {"melanoma":0.7,"benign_nevus":0.3}
+ ✓ 2 tests
+```
+
+Real multimodal inference through the real provider, fence-stripped, schema-validated and mapped
+onto the catalogue. The second test points the provider at an invalid key and a nonexistent model
+and asserts it degrades to measured features instead of failing the analysis.
+
+### End-to-end walkthrough against a running server
+
+`npm run standalone -w @caliper/api` (Express + Socket.IO + ephemeral MongoDB, no Docker needed):
+
+```
+GET  /api/v1/health
+  {"status":"ok","provider":"cv-heuristic","modelId":"abcd-heuristic-v1","mongo":"connected"}
+
+POST /api/v1/analyses                                                         → HTTP 202
+  {"analysisId":"fdfe7b76-…","status":"queued","channel":"analysis:fdfe7b76-…"}
+
+GET  /api/v1/analyses/fdfe7b76-…                                              → HTTP 200
+  status      : complete | stage: complete | progress: 1
+  provider    : cv-heuristic / abcd-heuristic-v1 | computeMs: 354
+  acuity      : urgent | confidence: 0.6753 | abstained: False
+  features    : border=4.455 asym=0.330 colour=1.08 entropy=0.12 contour=219 pts
+  differential:
+     Melanoma                      67.5%  urgent
+     Basal cell carcinoma           6.4%  prompt
+     Cellulitis                     5.7%  urgent
+     Seborrhoeic keratosis          5.4%  routine
+  top evidence for #1:
+     Base rate            4% of photographed lesions   -3.22
+     Asymmetry            1.00 activation (high)       +2.40
+     Border irregularity  1.00 activation (high)       +2.20
+     Reported: changing   stated in intake             +1.28
+
+POST /api/v1/analyses  (same Idempotency-Key)   → same analysisId: True
+POST /api/v1/analyses  (a text file named .png) → HTTP 400 invalid_request
+```
+
+### Also covered by test
+
+Ownership isolation (one user gets 404, not 403, on another's analysis — and an empty list rather
+than a leak of row counts); account-enumeration resistance (identical body for unknown-email and
+wrong-password); refusal to mint an admin through self-service registration; rejection of a refresh
+token used as an access token; `413` on oversized upload; magic-byte sniffing across all five
+accepted signatures plus two rejections; rate limiting proven with a purpose-built app at limit 2.
+
+A test-isolation defect was also fixed here: the shared event bus accumulated across tests, so a
+stage-sequence assertion was matching the previous test's events. The log is now reset per test and
+the assertion filters by analysis id.
+
+### Not verified, and why
+
+- **ffmpeg video extraction.** No ffmpeg binary in this environment. `FfmpegFrameExtractor` is
+  written and typechecked but has not been executed; it throws a message naming the missing
+  dependency rather than failing obscurely, and `apps/api/Dockerfile` installs ffmpeg so
+  `docker compose up` would exercise it. Recorded here rather than claimed as working.
+- **`docker compose up`.** Docker is not available in this environment. The compose file and
+  Dockerfile are written but have not been built. The `standalone` script above is what was
+  actually run, and it is the path the README recommends for that reason.
+- **MongoDB Atlas.** Not provisioned. All Mongo testing was against `mongodb-memory-server` 10.4.3,
+  which runs a genuine `mongod`.

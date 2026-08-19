@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { disc, lobedBlob } from '@caliper/core/testing';
-import type { Intake, MediaRef, PipelineEvent, RgbaImage } from '@caliper/core';
+import type { Intake, MediaUpload, RgbaImage } from '@caliper/core';
 import { CvHeuristicProvider } from './providers/cvHeuristic.js';
 import {
   FixedClock, ImmediateJobQueue, MemoryAnalysisRepository, MemoryEventBus, MemoryMediaStore,
@@ -10,9 +10,11 @@ import { StaticFrameExtractor } from './adapters/rgbaFrames.js';
 import type { InferenceProvider, ServiceDeps } from './ports.js';
 import { cancelAnalysis, getAnalysis, listAnalyses, NotFoundError, submitAnalysis, ValidationError } from './usecases.js';
 
-const IMAGE: MediaRef = {
-  id: 'analysis-1', kind: 'image', mimeType: 'image/png', byteSize: 1024, width: 256, height: 256,
+const IMAGE: MediaUpload = {
+  kind: 'image', mimeType: 'image/png', byteSize: 1024, width: 256, height: 256,
 };
+/** The service mints media ids as `<analysisId>-media`; fixtures are keyed to match. */
+const mediaIdFor = (analysisId: string) => `${analysisId}-media`;
 const INTAKE: Intake = { symptomsText: 'changing and bleeding', symptomIds: [] };
 
 interface Harness {
@@ -39,9 +41,9 @@ function harness(provider: InferenceProvider = new CvHeuristicProvider()): Harne
   return { deps, events, queue, frames };
 }
 
-async function submitAndRun(h: Harness, over: Partial<{ intake: Intake; media: MediaRef }> = {}) {
+async function submitAndRun(h: Harness, over: Partial<{ intake: Intake; media: MediaUpload }> = {}) {
   const media = over.media ?? IMAGE;
-  h.frames.set(media.id, [disc(70)]);
+  h.frames.set(mediaIdFor('analysis-1'), [disc(70)]);
   const res = await submitAnalysis(h.deps, {
     intake: over.intake ?? INTAKE,
     media,
@@ -56,7 +58,7 @@ describe('submitAnalysis', () => {
   beforeEach(() => { h = harness(); });
 
   it('returns 202-shaped data immediately, before the pipeline runs', async () => {
-    h.frames.set(IMAGE.id, [disc(70)]);
+    h.frames.set(mediaIdFor('analysis-1'), [disc(70)]);
     const res = await submitAnalysis(h.deps, { intake: INTAKE, media: IMAGE, bytes: new Uint8Array([1]) });
     expect(res.status).toBe('queued');
     expect(res.analysisId).toBe('analysis-1');
@@ -71,7 +73,7 @@ describe('submitAnalysis', () => {
   });
 
   it('returns the original analysis when an idempotency key is replayed', async () => {
-    h.frames.set(IMAGE.id, [disc(70)]);
+    h.frames.set(mediaIdFor('analysis-1'), [disc(70)]);
     const first = await submitAnalysis(h.deps, {
       intake: INTAKE, media: IMAGE, bytes: new Uint8Array([1]), idempotencyKey: 'retry-key-1234',
     });
@@ -126,12 +128,12 @@ describe('happy path', () => {
   it('produces different results for different media', async () => {
     // The guarantee that matters: the output is a function of the pixels, not of the code path.
     const a = harness();
-    a.frames.set(IMAGE.id, [disc(70)]);
+    a.frames.set(mediaIdFor('analysis-1'), [disc(70)]);
     await submitAnalysis(a.deps, { intake: INTAKE, media: IMAGE, bytes: new Uint8Array([1]) });
     await a.queue.drain();
 
     const b = harness();
-    b.frames.set(IMAGE.id, [lobedBlob(70)]);
+    b.frames.set(mediaIdFor('analysis-1'), [lobedBlob(70)]);
     await submitAnalysis(b.deps, { intake: INTAKE, media: IMAGE, bytes: new Uint8Array([1]) });
     await b.queue.drain();
 
@@ -144,8 +146,8 @@ describe('happy path', () => {
 describe('video', () => {
   it('samples every frame and records per-frame features', async () => {
     const h = harness();
-    const media: MediaRef = { ...IMAGE, kind: 'video', mimeType: 'video/mp4', durationMs: 3000 };
-    h.frames.set(media.id, [disc(70), lobedBlob(70), disc(65)]);
+    const media: MediaUpload = { ...IMAGE, kind: 'video', mimeType: 'video/mp4', durationMs: 3000 };
+    h.frames.set(mediaIdFor('analysis-1'), [disc(70), lobedBlob(70), disc(65)]);
     await submitAnalysis(h.deps, { intake: INTAKE, media, bytes: new Uint8Array([1]) });
     await h.queue.drain();
 
@@ -174,11 +176,11 @@ describe('failure handling', () => {
 
   it('fails cleanly when the media is missing from the store', async () => {
     const h = harness();
-    h.frames.set(IMAGE.id, [disc(70)]);
+    h.frames.set(mediaIdFor('analysis-1'), [disc(70)]);
     const { analysisId } = await submitAnalysis(h.deps, {
       intake: INTAKE, media: IMAGE, bytes: new Uint8Array([1]),
     });
-    await h.deps.mediaStore.delete(IMAGE.id);
+    await h.deps.mediaStore.delete(mediaIdFor('analysis-1'));
     await h.queue.drain();
     const analysis = await getAnalysis(h.deps, analysisId);
     expect(analysis.status).toBe('failed');
@@ -187,7 +189,7 @@ describe('failure handling', () => {
 
   it('fails cleanly when no frames can be decoded', async () => {
     const h = harness();
-    h.frames.set(IMAGE.id, []);
+    h.frames.set(mediaIdFor('analysis-1'), []);
     const { analysisId } = await submitAnalysis(h.deps, {
       intake: INTAKE, media: IMAGE, bytes: new Uint8Array([1]),
     });
@@ -220,7 +222,7 @@ describe('cancellation', () => {
       async infer() { await gate; return { quality: { usable: true, issues: [] } }; },
     };
     const h = harness(slow);
-    h.frames.set(IMAGE.id, [disc(70)]);
+    h.frames.set(mediaIdFor('analysis-1'), [disc(70)]);
     const { analysisId } = await submitAnalysis(h.deps, {
       intake: INTAKE, media: IMAGE, bytes: new Uint8Array([1]),
     });

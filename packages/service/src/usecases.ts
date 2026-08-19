@@ -2,9 +2,7 @@
  * The use-cases. This is the API, in the sense that matters: Express routes and the browser's
  * in-process transport are both thin adapters over exactly these four functions.
  */
-import {
-  AnalysisSchema, MediaRefSchema, SubmitAnalysisRequestSchema,
-} from '@caliper/core';
+import { AnalysisSchema, MediaRefSchema, SubmitAnalysisRequestSchema } from '@caliper/core';
 import type { Analysis, SubmitAnalysisResponse } from '@caliper/core';
 import { runPipeline } from './pipeline.js';
 import type { ServiceDeps } from './ports.js';
@@ -62,7 +60,11 @@ export async function submitAnalysis(
 
   const id = deps.ids.next();
   const now = deps.clock.now().toISOString();
-  const mediaRef = MediaRefSchema.parse({ ...media, id: media && typeof media === 'object' && 'id' in media && (media as { id?: string }).id ? (media as { id: string }).id : id });
+  // The storage id is minted here and nowhere else. An earlier version accepted a caller-supplied
+  // id, and the API passed a constant placeholder for it — so every upload in the system wrote to
+  // the same GridFS key and every analysis measured whichever image landed first. Caught by the
+  // integration test that submits two different pictures and demands two different measurements.
+  const mediaRef = MediaRefSchema.parse({ ...media, id: `${id}-media` });
 
   await deps.mediaStore.put({ ref: mediaRef, bytes: input.bytes });
 
