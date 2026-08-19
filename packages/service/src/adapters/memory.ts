@@ -96,6 +96,14 @@ export class ImmediateJobQueue implements JobQueue {
     const signal = { cancelled: false };
     this.running.set(jobId, signal);
     this.tail = this.tail
+      // Yield a macrotask before starting.
+      //
+      // The API returns 202 with a channel and expects the client to subscribe *next*. Starting
+      // the job in the same microtask means the first stage event can be emitted before that
+      // subscription exists, and the client silently misses it. In production there is always a
+      // queue hop here; in-process there is not, so one is inserted deliberately rather than
+      // leaving the ordering to chance.
+      .then(() => new Promise<void>((resolve) => setTimeout(resolve, 0)))
       .then(() => run(signal))
       .catch(() => undefined)
       .finally(() => {
