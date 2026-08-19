@@ -144,3 +144,59 @@ function clamp(n: number, lo: number, hi: number): number {
 
 export { assessQuality };
 export type { RgbaImage };
+
+/**
+ * Collapse per-frame features from a video into one descriptor.
+ *
+ * Frames are not equally trustworthy: a hand-held clip has motion-blurred frames between the sharp
+ * ones, and averaging them flat drags every measurement toward the blur. Weighting by sharpness and
+ * exposure means the frames that could actually be measured are the ones that count.
+ *
+ * The key frame — the single sharpest, best-exposed frame — is what the viewport displays and what
+ * a clinician would be shown in a real report, so it is identified here rather than guessed at in
+ * the UI.
+ */
+export function aggregateFrameFeatures(frames: ImageFeatures[]): {
+  aggregate: ImageFeatures;
+  keyFrameIndex: number;
+} {
+  if (frames.length === 0) throw new Error('aggregateFrameFeatures requires at least one frame');
+  if (frames.length === 1) return { aggregate: frames[0]!, keyFrameIndex: 0 };
+
+  const weights = frames.map((f) => Math.max(1e-3, Math.log1p(Math.max(0, f.blurScore)) * Math.max(0.05, f.exposureScore)));
+  const total = weights.reduce((a, b) => a + b, 0);
+
+  let keyFrameIndex = 0;
+  for (let i = 1; i < frames.length; i++) if (weights[i]! > weights[keyFrameIndex]!) keyFrameIndex = i;
+
+  const wmean = (pick: (f: ImageFeatures) => number): number => {
+    let s = 0;
+    for (let i = 0; i < frames.length; i++) s += pick(frames[i]!) * weights[i]!;
+    return Math.round((s / total) * 10000) / 10000;
+  };
+
+  const key = frames[keyFrameIndex]!;
+  const aggregate: ImageFeatures = {
+    asymmetry: wmean((f) => f.asymmetry),
+    borderIrregularity: wmean((f) => f.borderIrregularity),
+    colourHeterogeneity: wmean((f) => f.colourHeterogeneity),
+    diameterPx: wmean((f) => f.diameterPx),
+    textureEntropy: wmean((f) => f.textureEntropy),
+    // Quality is reported for the frame we would actually show, not averaged into meaninglessness:
+    // "this clip contains a usable frame" is the decision the gate needs to make.
+    blurScore: key.blurScore,
+    exposureScore: key.exposureScore,
+    maskAreaRatio: wmean((f) => f.maskAreaRatio),
+    brightSpeckleRatio: wmean((f) => f.brightSpeckleRatio),
+    // Geometry cannot be averaged across frames — the lesion moves between them. Take the key
+    // frame's outline, which is the one drawn over the key frame's pixels.
+    contour: key.contour,
+    meanColour: [
+      wmean((f) => f.meanColour[0]),
+      wmean((f) => f.meanColour[1]),
+      wmean((f) => f.meanColour[2]),
+    ],
+    ...(key.diameterMm !== undefined ? { diameterMm: wmean((f) => f.diameterMm ?? 0) } : {}),
+  };
+  return { aggregate, keyFrameIndex };
+}

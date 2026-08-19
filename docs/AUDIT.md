@@ -149,3 +149,34 @@ strongest case lands between 0.5 and 0.8 — a bound that would fail if temperat
 
 The last row is the "triage on the worst plausible candidate" rule working: eczema is a close
 second, but a 30% melanoma does not get a routine disposition.
+---
+
+## Gate 2 — `@caliper/service` — **PASS** (2026-08-19)
+
+```
+ ✓ src/pipeline.test.ts (16 tests)
+   Test Files  1 passed (1)        Tests  16 passed (16)
+```
+
+`tsc --noEmit` clean. The gate asked for the happy-path event sequence to be asserted literally and
+for an injected provider failure to be proven not to hang. Both are done:
+
+```js
+expect(h.events.log.map((e) => e.stage)).toEqual([
+  'received', 'preprocess', 'features', 'inference', 'fusion', 'complete',
+]);
+```
+
+Failure modes covered by test, each of which would otherwise leave a spinner running forever:
+provider throws (→ `failed`, error message preserved, progress 1), media missing from the store,
+zero decodable frames, a subscriber that throws during event fan-out (must not fail the analysis —
+in `apps/api` the bus is Socket.IO and a disconnecting client is routine), cancellation mid-flight,
+and cancellation of an already-complete analysis.
+
+Also asserted: progress is monotonically non-decreasing and terminates at 1; the result rides only
+on the terminal event; a replayed idempotency key returns the original analysis rather than
+starting a second one; and two different images through the same code path produce different
+feature values — the guarantee that output is a function of the pixels rather than of the route.
+
+One packaging fix was needed: `@caliper/core` now exports a `./testing` subpath so other packages
+can use the synthetic fixtures without reaching into `src/`.
